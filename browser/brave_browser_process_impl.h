@@ -62,6 +62,10 @@ namespace speedreader {
 class SpeedreaderWhitelist;
 }
 
+namespace brave_client_model_parameters {
+class ClientModelParameterService;
+}
+
 class BraveBrowserProcessImpl : public BrowserProcessImpl {
  public:
   explicit BraveBrowserProcessImpl(StartupData* startup_data);
@@ -101,6 +105,8 @@ class BraveBrowserProcessImpl : public BrowserProcessImpl {
 #if BUILDFLAG(ENABLE_SPEEDREADER)
   speedreader::SpeedreaderWhitelist* speedreader_whitelist();
 #endif
+  brave_client_model_parameters::ClientModelParameterService*
+      client_model_parameter_service():
 
  private:
   // BrowserProcessImpl overrides:
@@ -161,6 +167,9 @@ class BraveBrowserProcessImpl : public BrowserProcessImpl {
 #if BUILDFLAG(ENABLE_SPEEDREADER)
   std::unique_ptr<speedreader::SpeedreaderWhitelist> speedreader_whitelist_;
 #endif
+
+  std::unique_ptr<brave_client_model_parameters::ClientModelParameterService>
+      client_model_parameter_service_;
 
   SEQUENCE_CHECKER(sequence_checker_);
 
