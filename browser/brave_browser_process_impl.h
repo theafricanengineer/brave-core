@@ -106,7 +106,7 @@ class BraveBrowserProcessImpl : public BrowserProcessImpl {
   speedreader::SpeedreaderWhitelist* speedreader_whitelist();
 #endif
   brave_client_model_parameters::ClientModelParameterService*
-      client_model_parameter_service():
+      client_model_parameter_service();
 
  private:
   // BrowserProcessImpl overrides:

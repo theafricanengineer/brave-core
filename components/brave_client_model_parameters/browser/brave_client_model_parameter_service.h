@@ -23,6 +23,12 @@ class ClientModelParameterService : public brave_component_updater::BraveCompone
   ClientModelParameterService(const ClientModelParameterService&) = delete;
   ClientModelParameterService& operator=(const ClientModelParameterService&) =
       delete;
+
+ private:
+  // brave_component_updater::BraveComponent:
+  void OnComponentReady(const std::string& component_id,
+                        const base::FilePath& install_dir,
+                        const std::string& manifest) override;
 };
 
 }  // namespace brave_client_model_parameters
