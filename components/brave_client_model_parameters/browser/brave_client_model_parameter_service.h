@@ -8,12 +8,16 @@
 
 #include <memory>
 #include <string>
+#include <map>
 
 #include "base/memory/weak_ptr.h"
 #include "brave/components/brave_component_updater/browser/brave_component.h"
 #include "brave/components/brave_component_updater/browser/dat_file_util.h"
 
 namespace brave_client_model_parameters {
+
+using ClientModelParameters = std::string;
+using ClientModelParametersList = std::map<std::string, ClientModelParameters>;
 
 class ClientModelParameterService : public brave_component_updater::BraveComponent {  // NOLINT
  public:
@@ -24,11 +28,16 @@ class ClientModelParameterService : public brave_component_updater::BraveCompone
   ClientModelParameterService& operator=(const ClientModelParameterService&) =
       delete;
 
+  ClientModelParameters GetParameters(
+      const std::string& model_name);
+
  private:
   // brave_component_updater::BraveComponent:
   void OnComponentReady(const std::string& component_id,
                         const base::FilePath& install_dir,
                         const std::string& manifest) override;
+
+  ClientModelParametersList client_model_parameter_list_;  // TODO(Moritz Haller): extract into dedicated class? NOLINT
 };
 
 }  // namespace brave_client_model_parameters
