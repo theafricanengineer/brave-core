@@ -57,6 +57,36 @@ bool DatabaseServerPublisherInfo::CreateIndexV7(
   return this->InsertIndex(transaction, kTableName, "publisher_key");
 }
 
+bool DatabaseServerPublisherInfo::CreateTableV21(
+    ledger::DBTransaction* transaction) {
+  DCHECK(transaction);
+
+  const std::string query = base::StringPrintf(
+      "CREATE TABLE %s "
+      "("
+      "publisher_key LONGVARCHAR PRIMARY KEY NOT NULL UNIQUE,"
+      "status INTEGER DEFAULT 0 NOT NULL,"
+      "excluded INTEGER DEFAULT 0 NOT NULL,"
+      "address TEXT NOT NULL,"
+      "updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP"
+      ")",
+      kTableName);
+
+  auto command = ledger::DBCommand::New();
+  command->type = ledger::DBCommand::Type::EXECUTE;
+  command->command = query;
+  transaction->commands.push_back(std::move(command));
+
+  return true;
+}
+
+bool DatabaseServerPublisherInfo::CreateIndexV21(
+    ledger::DBTransaction* transaction) {
+  DCHECK(transaction);
+
+  return this->InsertIndex(transaction, kTableName, "publisher_key");
+}
+
 bool DatabaseServerPublisherInfo::Migrate(
     ledger::DBTransaction* transaction,
     const int target) {
@@ -68,6 +98,9 @@ bool DatabaseServerPublisherInfo::Migrate(
     }
     case 15: {
       return MigrateToV15(transaction);
+    }
+    case 21: {
+      return MigrateToV21(transaction);
     }
     default: {
       return true;
@@ -105,6 +138,25 @@ bool DatabaseServerPublisherInfo::MigrateToV15(
   return banner_->Migrate(transaction, 15);
 }
 
+bool DatabaseServerPublisherInfo::MigrateToV21(
+    ledger::DBTransaction* transaction) {
+  DCHECK(transaction);
+
+  if (!DropTable(transaction, kTableName)) {
+    return false;
+  }
+
+  if (!CreateTableV21(transaction)) {
+    return false;
+  }
+
+  if (!CreateIndexV21(transaction)) {
+    return false;
+  }
+
+  return banner_->Migrate(transaction, 21);
+}
+
 void DatabaseServerPublisherInfo::DeleteAll(ledger::ResultCallback callback) {
   auto transaction = ledger::DBTransaction::New();
   const std::string query = base::StringPrintf("DELETE FROM %s", kTableName);
@@ -130,7 +182,9 @@ void DatabaseServerPublisherInfo::InsertOrUpdatePartialList(
   }
 
   const std::string base_query = base::StringPrintf(
-      "INSERT OR REPLACE INTO %s VALUES ",
+      "INSERT OR REPLACE INTO %s "
+      "(publisher_key, status, excluded, address) "
+      "VALUES ",
       kTableName);
 
   size_t i = 0;

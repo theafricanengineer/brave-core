@@ -1382,6 +1382,13 @@ void LedgerImpl::DeleteActivityInfo(
   bat_database_->DeleteActivityInfo(publisher_key, callback);
 }
 
+void LedgerImpl::ResetPublisherListPrefixes(
+    braveledger_publisher::PrefixIterator begin,
+    braveledger_publisher::PrefixIterator end,
+    ledger::ResultCallback callback) {
+  bat_database_->ResetPublisherListPrefixes(begin, end, callback);
+}
+
 void LedgerImpl::ClearServerPublisherList(ledger::ResultCallback callback) {
   bat_database_->ClearServerPublisherList(callback);
 }
@@ -1401,7 +1408,17 @@ void LedgerImpl::InsertPublisherBannerList(
 void LedgerImpl::GetServerPublisherInfo(
     const std::string& publisher_key,
     ledger::GetServerPublisherInfoCallback callback) {
-  bat_database_->GetServerPublisherInfo(publisher_key, callback);
+  bat_database_->GetServerPublisherInfo(
+      publisher_key,
+      std::bind(&LedgerImpl::OnServerPublisherInfoLoaded,
+          this, _1, callback));
+}
+
+void LedgerImpl::OnServerPublisherInfoLoaded(
+    ledger::ServerPublisherInfoPtr server_info,
+    ledger::GetServerPublisherInfoCallback callback) {
+  // TODO(zenparsing): Update if not found or cache expired.
+  callback(std::move(server_info));
 }
 
 bool LedgerImpl::IsPublisherConnectedOrVerified(

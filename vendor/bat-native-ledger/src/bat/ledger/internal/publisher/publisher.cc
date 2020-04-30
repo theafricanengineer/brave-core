@@ -17,6 +17,7 @@
 #include "bat/ledger/internal/properties/publisher_settings_properties.h"
 #include "bat/ledger/internal/properties/report_balance_properties.h"
 #include "bat/ledger/internal/publisher/publisher.h"
+#include "bat/ledger/internal/publisher/publisher_list_fetcher.h"
 #include "bat/ledger/internal/publisher/publisher_server_list.h"
 #include "bat/ledger/internal/state/publisher_settings_state.h"
 #include "bat/ledger/internal/static_values.h"
@@ -42,7 +43,8 @@ namespace braveledger_publisher {
 Publisher::Publisher(bat_ledger::LedgerImpl* ledger):
   ledger_(ledger),
   state_(new ledger::PublisherSettingsProperties),
-  server_list_(std::make_unique<PublisherServerList>(ledger)) {
+  server_list_(std::make_unique<PublisherServerList>(ledger)),
+  publisher_list_fetcher_(std::make_unique<PublisherListFetcher>(ledger)) {
   calcScoreConsts(state_->min_page_time_before_logging_a_visit);
 }
 
@@ -61,6 +63,9 @@ void Publisher::RefreshPublisher(
           _1,
           publisher_key,
           callback));
+  // TODO(zenparsing): Find the hash prefix for this publisher, then
+  // get the channel info. If we find a match, load it into the database
+  // as usual and also insert a prefix into the prefix table.
 }
 
 void Publisher::OnRefreshPublisher(
@@ -78,6 +83,7 @@ void Publisher::OnRefreshPublisher(
               _1,
               callback);
 
+  // TODO(zenparsing): High-integrity use case
   ledger_->GetServerPublisherInfo(publisher_key, server_callback);
 }
 
@@ -98,6 +104,12 @@ void Publisher::SetPublisherServerListTimer(const bool rewards_enabled) {
   }
 
   server_list_->SetTimer(false);
+
+  if (rewards_enabled) {
+    publisher_list_fetcher_->StartAutoUpdate();
+  } else {
+    publisher_list_fetcher_->StopAutoUpdate();
+  }
 }
 
 void Publisher::calcScoreConsts(const uint64_t& min_duration_seconds) {
@@ -160,6 +172,10 @@ void Publisher::SaveVisit(
                 window_id,
                 callback);
 
+  // TODO(zenparsing): High-efficiency use case. I think that this
+  // is the only one. Call ledger method to search for the hash
+  // prefix. If not found, callback with empty publisher info. If
+  // found, call GetServerPublisherInfo.
   ledger_->GetServerPublisherInfo(publisher_key, server_callback);
 }
 
@@ -890,6 +906,9 @@ void Publisher::GetPublisherBanner(
                 publisher_key,
                 callback);
 
+  // TODO(zenparsing): High-integrity use case (I think; this is
+  // only called from the front-end after we know that the publisher
+  // key is valid.
   ledger_->GetServerPublisherInfo(publisher_key, banner_callback);
 }
 
