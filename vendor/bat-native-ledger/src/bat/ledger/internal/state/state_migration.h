@@ -23,12 +23,14 @@ class StateMigration {
   explicit StateMigration(bat_ledger::LedgerImpl* ledger);
   ~StateMigration();
 
-  bool Migrate();
+  void Migrate();
 
  private:
-  bool Migrate(int version);
+  void OnMigration(ledger::Result result, int version);
 
-  bool MigrateToVersion1();
+  void MigrateToVersion1(ledger::ResultCallback callback);
+
+  void OnLoadState(const ledger::Result result);
 
   bat_ledger::LedgerImpl* ledger_;  // NOT OWNED
 };

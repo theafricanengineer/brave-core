@@ -18,6 +18,10 @@ namespace ledger {
       "promotion_corrupted_migrated";
   const char kStateAnonTransferChecked[] = "anon_transfer_checked";
   const char kStateVersion[] = "version";
+  const char kStateMinVisitTime[] = "min_visit_time";
+  const char kStateMinVisits[] = "min_visits";
+  const char kStateAllowNonVerified[] = "allow_non_verified";
+  const char kStateAllowVideoContribution[] = "allow_video_contributions";
 }  // namespace ledger
 
 #endif  // BRAVELEDGER_STATE_STATE_KEYS_H_

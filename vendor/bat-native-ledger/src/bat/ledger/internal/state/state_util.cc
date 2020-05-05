@@ -18,4 +18,78 @@ int GetVersion(bat_ledger::LedgerImpl* ledger) {
   return ledger->GetIntegerState(ledger::kStateVersion);
 }
 
+void SetPublisherMinVisitTime(
+    bat_ledger::LedgerImpl* ledger,
+    const uint64_t& duration) {
+  DCHECK(ledger);
+  ledger->SetUint64State(ledger::kStateMinVisitTime, duration);
+  ledger->CalcScoreConsts(duration);
+  ledger->SynopsisNormalizer();
+}
+
+uint64_t GetPublisherMinVisitTime(bat_ledger::LedgerImpl* ledger) {
+  DCHECK(ledger);
+  return ledger->GetUint64State(ledger::kStateMinVisitTime);
+}
+
+void SetPublisherMinVisits(
+    bat_ledger::LedgerImpl* ledger,
+    const int visits) {
+  DCHECK(ledger);
+  ledger->SetIntegerState(ledger::kStateMinVisits, visits);
+  ledger->SynopsisNormalizer();
+}
+
+int GetPublisherMinVisits(bat_ledger::LedgerImpl* ledger) {
+  DCHECK(ledger);
+  return ledger->GetIntegerState(ledger::kStateMinVisits);
+}
+
+void SetPublisherAllowNonVerified(
+    bat_ledger::LedgerImpl* ledger,
+    const bool allow) {
+  DCHECK(ledger);
+  ledger->SetBooleanState(ledger::kStateAllowNonVerified, allow);
+  ledger->SynopsisNormalizer();
+}
+
+bool GetPublisherAllowNonVerified(bat_ledger::LedgerImpl* ledger) {
+  DCHECK(ledger);
+  return ledger->GetBooleanState(ledger::kStateAllowNonVerified);
+}
+
+void SetPublisherAllowVideos(
+    bat_ledger::LedgerImpl* ledger,
+    const bool allow) {
+  DCHECK(ledger);
+  ledger->SetBooleanState(ledger::kStateAllowVideoContribution, allow);
+  ledger->SynopsisNormalizer();
+}
+
+bool GetPublisherAllowVideos(bat_ledger::LedgerImpl* ledger) {
+  DCHECK(ledger);
+  return ledger->GetBooleanState(ledger::kStateAllowVideoContribution);
+}
+
+void SavePublisherProcessed(
+    bat_ledger::LedgerImpl* ledger,
+    const std::string& publisher_key) {
+  DCHECK(ledger);
+  // TODO
+//  const std::vector<std::string> list = state_->processed_pending_publishers;
+//  if (std::find(list.begin(), list.end(), publisher_key) == list.end()) {
+//    state_->processed_pending_publishers.push_back(publisher_key);
+//  }
+}
+
+bool WasPublisherAlreadyProcessed(
+    bat_ledger::LedgerImpl* ledger,
+    const std::string& publisher_key) {
+  DCHECK(ledger);
+  // TODO
+//  const std::vector<std::string> list = state_->processed_pending_publishers;
+//  return std::find(list.begin(), list.end(), publisher_key) != list.end();
+  return true;
+}
+
 }  // namespace braveledger_state
