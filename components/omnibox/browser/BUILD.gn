@@ -20,6 +20,7 @@ source_set("browser") {
 
   deps = [
      "//base",
+     "//brave/common:pref_names",
      "//components/omnibox/browser:buildflags",
      "//components/security_state/core",
      "//skia",
