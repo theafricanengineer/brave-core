@@ -5,20 +5,23 @@
 #pragma once
 
 #import <Foundation/Foundation.h>
-#import <iostream>
+#import <ostream>
 
 #import "bat/ledger/ledger_client.h"
 #import "bat/ads/ads_client.h"
 #import "Logger.h"
 
 /// A generic unbuffered logger logs messages via iostream
-class RewardsLogStream : public ledger::LogStream, public ads::LogStream {
+class RewardsLogStream : public ledger::LogStream {
 public:
   /// Creates a stream for logging ledger information
   RewardsLogStream(const char* file, const int line, const ledger::LogLevel log_level);
     
   /// Creates a stream for logging ads information
-  RewardsLogStream(const char* file, const int line, const ads::LogLevel log_level);
+  RewardsLogStream(const char* file, const int line, const ads::LogSeverity severity);
+    
+  /// Creates a stream for logging verbose ads information
+  RewardsLogStream(const char* file, const int line, const int verbose_level);
     
   /// Flushes logs immediately upon destruction
   ~RewardsLogStream() override;
