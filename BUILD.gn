@@ -59,6 +59,12 @@ group("brave") {
       "//chrome"
     ]
   }
+
+  if (is_win && is_official_build) {
+    # Generate courgette binary here instead of create_dist target to avoid
+    # patching to mini_installer build.gn
+    deps += [ "//courgette:copy_courgette_binaries" ]
+  }
 }
 
 group("resources") {
