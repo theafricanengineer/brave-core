@@ -375,9 +375,12 @@ export default function shieldsPanelReducer (
         break
       }
       state = shieldsPanelState.saveCosmeticFilterRuleExceptions(state, action.tabId, action.exceptions)
-      chrome.tabs.sendMessage(action.tabId, {
-        type: 'cosmeticFilteringBackgroundReady',
-        scriptlet: action.scriptlet
+      chrome.braveShields.get1pCosmeticFilteringEnabledAsync().then((hide1pContent: boolean) => {
+        chrome.tabs.sendMessage(action.tabId, {
+          type: 'cosmeticFilteringBackgroundReady',
+          scriptlet: action.scriptlet,
+          hide1pContent
+        })
       })
       break
     }
@@ -388,12 +391,15 @@ export default function shieldsPanelReducer (
         break
       }
       const cosmeticBlockingEnabled = tabData.cosmeticBlocking
-      chrome.braveShields.getBraveShieldsEnabledAsync(action.url)
-        .then((braveShieldsEnabled: boolean) => {
+      Promise.all([chrome.braveShields.getBraveShieldsEnabledAsync(action.url), chrome.braveShields.get1pCosmeticFilteringEnabledAsync()])
+        .then(([braveShieldsEnabled, hide1pContent]: [boolean, boolean]) => {
           const doCosmeticBlocking = braveShieldsEnabled && cosmeticBlockingEnabled
           if (doCosmeticBlocking) {
-            applyAdblockCosmeticFilters(action.tabId, getHostname(action.url))
+            applyAdblockCosmeticFilters(action.tabId, getHostname(action.url), hide1pContent)
           }
+        })
+        .catch(() => {
+          console.error('Could not apply cosmetic blocking')
         })
       break
     }

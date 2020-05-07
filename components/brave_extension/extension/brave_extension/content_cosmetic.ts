@@ -532,8 +532,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const action = typeof msg === 'string' ? msg : msg.type
   switch (action) {
     case 'cosmeticFilteringBackgroundReady': {
-      scheduleQueuePump()
       injectScriptlet(msg.scriptlet)
+      if (!msg.hide1pContent) {
+        scheduleQueuePump()
+      }
       break
     }
     case 'cosmeticFilterConsiderNewSelectors': {
