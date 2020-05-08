@@ -367,7 +367,8 @@ enum PromotionStatus {
   ACTIVE = 0,
   ATTESTED = 1,
   FINISHED = 4,
-  OVER = 5
+  OVER = 5,
+  ERROR = 6
 };
 
 struct Promotion {
@@ -451,7 +452,8 @@ enum CredsBatchStatus {
   BLINDED = 1,
   CLAIMED = 2,
   SIGNED = 3,
-  FINISHED = 4
+  FINISHED = 4,
+  ERROR = 5
 };
 
 struct CredsBatch {
