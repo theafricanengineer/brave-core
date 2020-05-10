@@ -1,0 +1,13 @@
+diff --git a/chrome/browser/payments/payment_request_factory.cc b/chrome/browser/payments/payment_request_factory.cc
+index 890f7b4af162293fbe12259b88e5f9bd6360d701..75f417c2f338012c37e1503181ebf16fe0664369 100644
+--- a/chrome/browser/payments/payment_request_factory.cc
++++ b/chrome/browser/payments/payment_request_factory.cc
+@@ -50,7 +50,7 @@ void CreatePaymentRequest(
+   PaymentRequestWebContentsManager::GetOrCreateForWebContents(web_contents)
+       ->CreatePaymentRequest(
+           render_frame_host, web_contents,
+-          std::make_unique<ChromePaymentRequestDelegate>(web_contents),
++          std::make_unique<BravePaymentRequestDelegate>(web_contents),
+           std::move(receiver),
+           /*observer_for_testing=*/nullptr);
+ }
