@@ -175,6 +175,11 @@ NS_SWIFT_NAME(BraveLedger)
 - (void)refreshPublisherWithId:(NSString *)publisherId
                     completion:(void (^)(BATPublisherStatus status))completion;
 
+#pragma mark - SKUs
+
+- (void)processSKUItems:(NSArray<BATSKUOrderItem *> *)items
+             completion:(void (^)(BATResult result, NSString *orderID))completion;
+
 #pragma mark - Tips
 
 /// Get a list of publishers who the user has recurring tips on
@@ -284,6 +289,8 @@ NS_SWIFT_NAME(BraveLedger)
 @property (nonatomic, assign) double contributionAmount;
 /// Whether or not the user will automatically contribute
 @property (nonatomic, assign, getter=isAutoContributeEnabled) BOOL autoContributeEnabled;
+/// A custom user agent for network operations on ledger
+@property (nonatomic, copy, nullable) NSString *customUserAgent;
 
 #pragma mark - Ads & Confirmations
 

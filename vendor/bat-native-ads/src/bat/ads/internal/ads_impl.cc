@@ -17,13 +17,11 @@
 #include "bat/ads/purchase_intent_signal_history.h"
 #include "bat/ads/internal/ads_impl.h"
 #include "bat/ads/internal/classification_helper.h"
-#include "bat/ads/internal/locale_helper.h"
 #include "bat/ads/internal/logging.h"
 #include "bat/ads/internal/search_providers.h"
 #include "bat/ads/internal/reports.h"
 #include "bat/ads/internal/static_values.h"
-#include "bat/ads/internal/time.h"
-#include "bat/ads/internal/uri_helper.h"
+#include "bat/ads/internal/time_util.h"
 #include "bat/ads/internal/ad_events/ad_notification_event_factory.h"
 #include "bat/ads/internal/event_type_blur_info.h"
 #include "bat/ads/internal/event_type_destroy_info.h"
@@ -35,6 +33,7 @@
 #include "bat/ads/internal/frequency_capping/frequency_capping.h"
 #include "bat/ads/internal/frequency_capping/exclusion_rules/per_hour_frequency_cap.h"
 #include "bat/ads/internal/frequency_capping/exclusion_rules/per_day_frequency_cap.h"
+#include "bat/ads/internal/frequency_capping/exclusion_rules/conversion_frequency_cap.h"
 #include "bat/ads/internal/frequency_capping/exclusion_rules/daily_cap_frequency_cap.h"
 #include "bat/ads/internal/frequency_capping/exclusion_rules/total_max_frequency_cap.h"
 #include "bat/ads/internal/frequency_capping/permission_rules/minimum_wait_time_frequency_cap.h"
@@ -43,6 +42,7 @@
 #include "bat/ads/internal/sorts/ads_history_sort_factory.h"
 #include "bat/ads/internal/purchase_intent/purchase_intent_signal_info.h"
 #include "bat/ads/internal/purchase_intent/purchase_intent_classifier.h"
+#include "bat/ads/internal/url_util.h"
 
 #include "base/guid.h"
 #include "base/rand_util.h"
@@ -62,6 +62,7 @@
 #include "base/android/build_info.h"
 #endif
 
+#include "brave/components/l10n/common/locale_util.h"
 #include "url/gurl.h"
 
 using std::placeholders::_1;
@@ -220,7 +221,7 @@ void AdsImpl::RemoveAllAdNotificationsAfterReboot() {
   if (!ads_shown_history.empty()) {
     uint64_t ad_shown_timestamp =
         ads_shown_history.front().timestamp_in_seconds;
-    uint64_t boot_timestamp = Time::NowInSeconds() -
+    uint64_t boot_timestamp = base::Time::Now().ToDoubleT() -
         static_cast<uint64_t>(base::SysInfo::Uptime().InSeconds());
     if (ad_shown_timestamp <= boot_timestamp) {
       ad_notifications_->RemoveAll(false);
@@ -372,33 +373,33 @@ void AdsImpl::OnUnIdle() {
 
 void AdsImpl::OnMediaPlaying(
     const int32_t tab_id) {
-  auto tab = media_playing_.find(tab_id);
-  if (tab != media_playing_.end()) {
+  const auto iter = media_playing_.find(tab_id);
+  if (iter != media_playing_.end()) {
     // Media is already playing for this tab
     return;
   }
 
   BLOG(INFO) << "OnMediaPlaying for tab id: " << tab_id;
 
-  media_playing_.insert({tab_id, true});
+  media_playing_.insert(tab_id);
 }
 
 void AdsImpl::OnMediaStopped(
     const int32_t tab_id) {
-  auto tab = media_playing_.find(tab_id);
-  if (tab == media_playing_.end()) {
+  const auto iter = media_playing_.find(tab_id);
+  if (iter == media_playing_.end()) {
     // Media is not playing for this tab
     return;
   }
 
   BLOG(INFO) << "OnMediaStopped for tab id: " << tab_id;
 
-  media_playing_.erase(tab_id);
+  media_playing_.erase(iter);
 }
 
 bool AdsImpl::IsMediaPlaying() const {
-  auto tab = media_playing_.find(active_tab_id_);
-  if (tab == media_playing_.end()) {
+  const auto iter = media_playing_.find(active_tab_id_);
+  if (iter == media_playing_.end()) {
     // Media is not playing in the active tab
     return false;
   }
@@ -608,7 +609,7 @@ bool AdsImpl::ToggleFlagAd(
 
 void AdsImpl::ChangeLocale(
     const std::string& locale) {
-  const std::string language_code = helper::Locale::GetLanguageCode(locale);
+  const std::string language_code = brave_l10n::GetLanguageCode(locale);
   client_->SetUserModelLanguage(language_code);
 
   const std::vector<std::string> languages = client_->GetUserModelLanguages();
@@ -707,18 +708,26 @@ void AdsImpl::OnPageLoaded(
 
   ExtractPurchaseIntentSignal(url);
 
-  if (helper::Uri::MatchesDomainOrHost(url,
-      last_shown_ad_notification_.target_url)) {
+  if (SameSite(url, last_shown_ad_notification_.target_url)) {
     BLOG(INFO) << "Visited URL matches the last shown ad notification";
 
-    if (!helper::Uri::MatchesDomainOrHost(url,
-        last_sustained_ad_notification_url_)) {
-      last_sustained_ad_notification_url_ = url;
+    if (last_sustained_ad_notification_.creative_instance_id !=
+        last_shown_ad_notification_.creative_instance_id) {
+      last_sustained_ad_notification_ = AdNotificationInfo();
+    }
+
+    if (!SameSite(url, last_sustained_ad_notification_.target_url)) {
+      last_sustained_ad_notification_ = last_shown_ad_notification_;
 
       StartSustainingAdNotificationInteraction();
     } else {
-      BLOG(INFO) << "Already sustaining ad notification interaction for "
-          "visited URL";
+      if (sustain_ad_notification_interaction_timer_.IsRunning()) {
+        BLOG(INFO) << "Already sustaining ad notification interaction for "
+            "visited URL";
+      } else {
+        BLOG(INFO) << "Already sustained ad notification interaction for "
+            "visited URL";
+      }
     }
 
     return;
@@ -748,7 +757,7 @@ void AdsImpl::ExtractPurchaseIntentSignal(
   }
 
   if (!SearchProviders::IsSearchEngine(url) &&
-      helper::Uri::MatchesDomainOrHost(url, previous_tab_url_)) {
+      SameSite(url, previous_tab_url_)) {
     return;
   }
 
@@ -794,7 +803,7 @@ void AdsImpl::MaybeClassifyPage(
 
 bool AdsImpl::ShouldClassifyPagesIfTargeted() const {
   const std::string locale = ads_client_->GetLocale();
-  const std::string language_code = helper::Locale::GetLanguageCode(locale);
+  const std::string language_code = brave_l10n::GetLanguageCode(locale);
 
   const std::vector<std::string> languages = client_->GetUserModelLanguages();
   if (std::find(languages.begin(), languages.end(), language_code)
@@ -1159,6 +1168,10 @@ std::vector<std::unique_ptr<ExclusionRule>>
       std::make_unique<TotalMaxFrequencyCap>(frequency_capping_.get());
   exclusion_rules.push_back(std::move(total_max_frequency_cap));
 
+  std::unique_ptr<ExclusionRule> conversion_frequency_cap =
+      std::make_unique<ConversionFrequencyCap>(frequency_capping_.get());
+  exclusion_rules.push_back(std::move(conversion_frequency_cap));
+
   return exclusion_rules;
 }
 
@@ -1340,7 +1353,7 @@ bool AdsImpl::ShowAdNotification(
     return false;
   }
 
-  auto now_in_seconds = Time::NowInSeconds();
+  auto now_in_seconds = base::Time::Now().ToDoubleT();
 
   client_->AppendTimestampToCreativeSetHistory(
       info.creative_set_id, now_in_seconds);
@@ -1360,7 +1373,7 @@ bool AdsImpl::ShowAdNotification(
   ad_notification->category = info.category;
   ad_notification->title = info.title;
   ad_notification->body = info.body;
-  ad_notification->target_url = helper::Uri::GetUri(info.target_url);
+  ad_notification->target_url = GetUrlWithScheme(info.target_url);
   ad_notification->geo_target = info.geo_targets.at(0);
 
   BLOG(INFO) << "Ad notification shown:"
@@ -1424,7 +1437,7 @@ bool AdsImpl::IsAllowedToServeAdNotifications() {
 }
 
 void AdsImpl::StartDeliveringAdNotifications() {
-  auto now_in_seconds = Time::NowInSeconds();
+  auto now_in_seconds = base::Time::Now().ToDoubleT();
   auto next_check_serve_ad_timestamp_in_seconds =
       client_->GetNextCheckServeAdNotificationTimestampInSeconds();
 
@@ -1439,12 +1452,12 @@ void AdsImpl::StartDeliveringAdNotifications() {
   const base::Time time = deliver_ad_notification_timer_.Start(delay,
       base::BindOnce(&AdsImpl::DeliverAdNotification, base::Unretained(this)));
 
-  BLOG(INFO) << "Deliver ad notification at " << time;
+  BLOG(INFO) << "Deliver ad notification " << FriendlyDateAndTime(time);
 }
 
 void AdsImpl::StartDeliveringAdNotificationsAfterSeconds(
     const uint64_t seconds) {
-  auto timestamp_in_seconds = Time::NowInSeconds() + seconds;
+  auto timestamp_in_seconds = base::Time::Now().ToDoubleT() + seconds;
   client_->SetNextCheckServeAdNotificationTimestampInSeconds(
       timestamp_in_seconds);
 
@@ -1459,7 +1472,7 @@ bool AdsImpl::IsCatalogOlderThanOneDay() {
   auto catalog_last_updated_timestamp_in_seconds =
     bundle_->GetCatalogLastUpdatedTimestampInSeconds();
 
-  auto now_in_seconds = Time::NowInSeconds();
+  auto now_in_seconds = base::Time::Now().ToDoubleT();
 
   if (catalog_last_updated_timestamp_in_seconds != 0 &&
       now_in_seconds > catalog_last_updated_timestamp_in_seconds
@@ -1524,12 +1537,11 @@ void AdsImpl::StartSustainingAdNotificationInteraction() {
       delay, base::BindOnce(&AdsImpl::SustainAdNotificationInteractionIfNeeded,
           base::Unretained(this)));
 
-  BLOG(INFO) << "Sustain ad notification interaction at " << time;
+  BLOG(INFO) << "Sustain ad notification interaction "
+      << FriendlyDateAndTime(time);
 }
 
 void AdsImpl::SustainAdNotificationInteractionIfNeeded() {
-  last_sustained_ad_notification_url_ = "";
-
   if (!IsStillViewingAdNotification()) {
     BLOG(INFO) << "Failed to sustain ad notification interaction. The domain "
         "for the focused tab does not match the last shown ad notification for "
@@ -1544,8 +1556,7 @@ void AdsImpl::SustainAdNotificationInteractionIfNeeded() {
 }
 
 bool AdsImpl::IsStillViewingAdNotification() const {
-  return helper::Uri::MatchesDomainOrHost(active_tab_url_,
-      last_shown_ad_notification_.target_url);
+  return SameSite(active_tab_url_, last_shown_ad_notification_.target_url);
 }
 
 void AdsImpl::ConfirmAd(
@@ -1576,7 +1587,7 @@ void AdsImpl::AppendAdNotificationToHistory(
     const AdNotificationInfo& info,
     const ConfirmationType& confirmation_type) {
   AdHistory ad_history;
-  ad_history.timestamp_in_seconds = Time::NowInSeconds();
+  ad_history.timestamp_in_seconds = base::Time::Now().ToDoubleT();
   ad_history.uuid = base::GenerateGUID();
   ad_history.parent_uuid = info.parent_uuid;
   ad_history.ad_content.creative_instance_id = info.creative_instance_id;

@@ -87,6 +87,7 @@ void CustomizeWebUIHTMLSource(const std::string &name,
         { "c9255cc2aa3d81ca6328e82d25a95766.png", IDR_BRAVE_REWARDS_IMG_CAPTCHA_BAT },           // NOLINT
         { "1bb9aa85741c6d1c077f043324aae835.svg", IDR_BRAVE_REWARDS_IMG_WELCOME_BG },            // NOLINT
         { "dcaf489409ca7908aef96547c9aad274.svg", IDR_BRAVE_REWARDS_IMG_TAP },                   // NOLINT
+        { "1bb9aa85741c6d1c077f043324aae835.svg", IDR_BRAVE_REWARDS_IMG_P2P },                    // NOLINT
       }
     }, {
       std::string("tip"), {
@@ -261,6 +262,7 @@ void CustomizeWebUIHTMLSource(const std::string &name,
         { "binanceWidgetSearch", IDS_BINANCE_WIDGET_SEARCH },
         { "binanceWidgetAddressUnavailable", IDS_BINANCE_WIDGET_ADDRESS_UNAVAILABLE },    // NOLINT
         { "binanceWidgetDepositAddress", IDS_BINANCE_WIDGET_DEPOSIT_ADDRESS },
+        { "binanceWidgetDepositMemo", IDS_BINANCE_WIDGET_DEPOSIT_MEMO },
         { "binanceWidgetConfirmConversion", IDS_BINANCE_WIDGET_CONFIRM_CONVERSION },      // NOLINT
         { "binanceWidgetConvert", IDS_BINANCE_WIDGET_CONVERT },
         { "binanceWidgetRate", IDS_BINANCE_WIDGET_RATE },
@@ -676,7 +678,11 @@ void CustomizeWebUIHTMLSource(const std::string &name,
         { "tapNetworkTitle", IDS_BRAVE_UI_TAP_NETWORK_TITLE },
         { "tapNetworkInfo", IDS_BRAVE_UI_TAP_NETWORK_INFO },
         { "tapNetworkLink", IDS_BRAVE_UI_TAP_NETWORK_LINK },
-        { "tapNetworkDisclaimer", IDS_BRAVE_UI_TAP_NETWORK_DISCLAIMER }
+        { "tapNetworkDisclaimer", IDS_BRAVE_UI_TAP_NETWORK_DISCLAIMER },
+
+        { "p2pTitle", IDS_BRAVE_UI_P2P_TITLE },
+        { "p2pLink", IDS_BRAVE_UI_P2P_LINK },
+        { "p2pDisclaimer", IDS_BRAVE_UI_P2P_DISCLAIMER }
       }
     }, {
       std::string("sync"), {
@@ -810,11 +816,35 @@ void CustomizeWebUIHTMLSource(const std::string &name,
     }, {
       std::string("rewards-internals"), {
         { "amount", IDS_BRAVE_REWARDS_INTERNALS_AMOUNT },
+        { "balanceInfo", IDS_BRAVE_REWARDS_INTERNALS_BALANCE_INFO },
+        { "bat", IDS_BRAVE_UI_BAT_TEXT },
         { "bootStamp", IDS_BRAVE_REWARDS_INTERNALS_BOOT_STAMP },
+        { "contributionsInProgress", IDS_BRAVE_REWARDS_INTERNALS_CONTRIBUTIONS_IN_PROGRESS },   // NOLINT
         { "currentReconcile", IDS_BRAVE_REWARDS_INTERNALS_CURRENT_RECONCILE },
         { "invalid", IDS_BRAVE_REWARDS_INTERNALS_INVALID },
         { "keyInfoSeed", IDS_BRAVE_REWARDS_INTERNALS_KEY_INFO_SEED },
         { "personaId", IDS_BRAVE_REWARDS_INTERNALS_PERSONA_ID },
+        { "processorBraveTokens", IDS_BRAVE_UI_PROCESSOR_BRAVE_TOKENS },
+        { "processorUphold", IDS_BRAVE_UI_PROCESSOR_UPHOLD },
+        { "processorBraveUserFunds", IDS_BRAVE_UI_PROCESSOR_BRAVE_USER_FUNDS },
+        { "promotionAds", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_ADS },
+        { "promotionAmount", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_AMOUNT },
+        { "promotionClaimedAt", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_CLAIMED_AT },             // NOLINT
+        { "promotionClaimId", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_CLAIM_ID },
+        { "promotionExpiresAt", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_EXPIRES_AT },              // NOLINT
+        { "promotionId", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_ID },
+        { "promotionLegacyClaimed", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_LEGACY_CLAIMED },      // NOLINT
+        { "promotionLegacyNo", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_LEGACY_NO },                // NOLINT
+        { "promotionLegacyYes", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_LEGACY_YES },              // NOLINT
+        { "promotions", IDS_BRAVE_REWARDS_INTERNALS_PROMOTIONS },
+        { "promotionStatus", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_STATUS },
+        { "promotionStatusActive", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_STATUS_ACTIVE },        // NOLINT
+        { "promotionStatusAttested", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_STATUS_ATTESTED },    // NOLINT
+        { "promotionStatusFinished", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_STATUS_FINISHED },    // NOLINT
+        { "promotionStatusOver", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_STATUS_OVER },            // NOLINT
+        { "promotionType", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_TYPE },
+        { "promotionUGP", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_UGP },
+        { "promotionVersion", IDS_BRAVE_REWARDS_INTERNALS_PROMOTION_VERSION },
         { "refreshButton", IDS_BRAVE_REWARDS_INTERNALS_REFRESH_BUTTON },
         { "retryLevel", IDS_BRAVE_REWARDS_INTERNALS_RETRY_LEVEL },
         { "retryStep", IDS_BRAVE_REWARDS_INTERNALS_RETRY_STEP },
@@ -830,9 +860,11 @@ void CustomizeWebUIHTMLSource(const std::string &name,
         { "retryStepVote", IDS_BRAVE_REWARDS_INTERNALS_RETRY_STEP_VOTE },
         { "retryStepWinners", IDS_BRAVE_REWARDS_INTERNALS_RETRY_STEP_WINNERS },
         { "rewardsNotEnabled", IDS_BRAVE_REWARDS_INTERNALS_REWARDS_NOT_ENABLED },                // NOLINT
+        { "totalBalance", IDS_BRAVE_REWARDS_INTERNALS_TOTAL_BALANCE },
         { "userId", IDS_BRAVE_REWARDS_INTERNALS_USER_ID },
         { "valid", IDS_BRAVE_REWARDS_INTERNALS_VALID },
         { "viewingId", IDS_BRAVE_REWARDS_INTERNALS_VIEWING_ID },
+        { "walletInfo", IDS_BRAVE_REWARDS_INTERNALS_WALLET_INFO },
         { "walletPaymentId", IDS_BRAVE_REWARDS_INTERNALS_WALLET_PAYMENT_ID },
       }
     }, {

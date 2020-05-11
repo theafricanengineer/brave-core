@@ -9,13 +9,12 @@ deps = {
   "vendor/python-patch": "https://github.com/brave/python-patch@d8880110be6554686bc08261766538c2926d4e82",
   "vendor/omaha":  "https://github.com/brave/omaha.git@de118d8511e4754a673d44a9f1e92d80442069e7",
   "vendor/sparkle": "https://github.com/brave/Sparkle.git@198b1f7930d3fb036eaae7a0eae34ec63ef4f479",
-  "vendor/speedreader_rust_ffi": "https://github.com/brave-experiments/speedreader-rust-ffi.git@9237e8ac4e6fd06548177a7065681a4efabcc239",
   "vendor/bat-native-rapidjson": "https://github.com/brave-intl/bat-native-rapidjson.git@86aafe2ef89835ae71c9ed7c2527e3bb3000930e",
   "vendor/bip39wally-core-native": "https://github.com/brave-intl/bip39wally-core-native.git@13bb40a215248cfbdd87d0a6b425c8397402e9e6",
   "vendor/bat-native-anonize": "https://github.com/brave-intl/bat-native-anonize.git@e3742ba3e8942eea9e4755d91532491871bd3116",
   "vendor/bat-native-tweetnacl": "https://github.com/brave-intl/bat-native-tweetnacl.git@800f9d40b7409239ff192e0be634764e747c7a75",
   "components/brave_sync/extension/brave-sync": {
-    'url': 'https://github.com/brave/sync.git@c96a1e1fbe288b217f15250322a5c9c9377f494a',
+    'url': 'https://github.com/brave/sync.git@5da4fc903f9cf0a627bbca28b49fcb09bb479f88',
     'condition': 'not checkout_android',
   },
   "components/brave_sync/extension/brave-sync-android": {

@@ -19,6 +19,7 @@
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/sequenced_task_runner.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "base/task_runner_util.h"
 #include "base/time/time.h"
@@ -31,13 +32,13 @@
 #include "brave/components/brave_ads/browser/ad_notification.h"
 #include "brave/components/brave_ads/browser/ads_notification_handler.h"
 #include "brave/components/brave_ads/browser/bundle_state_database.h"
-#include "brave/components/brave_ads/browser/locale_helper.h"
 #include "brave/components/brave_ads/common/pref_names.h"
 #include "brave/components/brave_ads/common/switches.h"
 #include "brave/components/brave_rewards/browser/rewards_notification_service.h"
 #include "brave/components/brave_rewards/browser/rewards_p3a.h"
 #include "brave/components/brave_rewards/browser/rewards_service.h"
-#include "brave/components/brave_rewards/browser/rewards_service_factory.h"
+#include "brave/components/l10n/browser/locale_helper.h"
+#include "brave/browser/brave_rewards/rewards_service_factory.h"
 #include "brave/components/brave_rewards/common/pref_names.h"
 #include "brave/components/services/bat_ads/public/cpp/ads_client_mojo_bridge.h"
 #include "brave/components/services/bat_ads/public/interfaces/bat_ads.mojom.h"
@@ -360,7 +361,7 @@ void AdsServiceImpl::OnUserModelUpdated(
 
 bool AdsServiceImpl::IsSupportedLocale() const {
   const std::string locale = GetLocale();
-  return ads::Ads::IsSupportedLocale(locale);
+  return ads::IsSupportedLocale(locale);
 }
 
 bool AdsServiceImpl::IsNewlySupportedLocale() {
@@ -381,7 +382,7 @@ bool AdsServiceImpl::IsNewlySupportedLocale() {
       GetIntegerPref(prefs::kSupportedRegionsLastSchemaVersion);
 
   const std::string locale = GetLocale();
-  return ads::Ads::IsNewlySupportedLocale(locale, last_schema_version);
+  return ads::IsNewlySupportedLocale(locale, last_schema_version);
 }
 
 void AdsServiceImpl::SetEnabled(
@@ -1295,7 +1296,7 @@ void AdsServiceImpl::MigratePrefsVersion1To2() {
 
 void AdsServiceImpl::MigratePrefsVersion2To3() {
   const auto locale = GetLocale();
-  const auto region = ads::Ads::GetRegion(locale);
+  const auto region = ads::GetRegionCode(locale);
 
   // Disable ads if upgrading from a pre brave ads build due to a bug where ads
   // were always enabled
@@ -1325,7 +1326,7 @@ void AdsServiceImpl::MigratePrefsVersion2To3() {
 
 void AdsServiceImpl::MigratePrefsVersion3To4() {
   const auto locale = GetLocale();
-  const auto region = ads::Ads::GetRegion(locale);
+  const auto region = ads::GetRegionCode(locale);
 
   // Disable ads for unsupported legacy regions due to a bug where ads were
   // enabled even if the users region was not supported
@@ -1373,7 +1374,7 @@ void AdsServiceImpl::MigratePrefsVersion3To4() {
 
 void AdsServiceImpl::MigratePrefsVersion4To5() {
   const auto locale = GetLocale();
-  const auto region = ads::Ads::GetRegion(locale);
+  const auto region = ads::GetRegionCode(locale);
 
   // Disable ads for unsupported legacy regions due to a bug where ads were
   // enabled even if the users region was not supported
@@ -1432,7 +1433,7 @@ void AdsServiceImpl::MigratePrefsVersion6To7() {
   // even if the users region was not supported
 
   const auto locale = GetLocale();
-  const auto region = ads::Ads::GetRegion(locale);
+  const auto region = ads::GetRegionCode(locale);
 
   const std::vector<std::string> legacy_regions = {
     "US",  // United States of America
@@ -1661,10 +1662,11 @@ void AdsServiceImpl::StartRemoveOnboardingTimer() {
       base::TimeDelta::FromSeconds(timer_offset_in_seconds),
           base::BindOnce(&AdsServiceImpl::RemoveOnboarding, AsWeakPtr()));
 
-  auto time = base::TimeFormatFriendlyDateAndTime(
-      base::Time::FromDoubleT(timestamp_in_seconds));
+  const std::string friendly_date_and_time =
+      base::UTF16ToUTF8(base::TimeFormatFriendlyDateAndTime(
+          base::Time::FromDoubleT(now_in_seconds + timer_offset_in_seconds)));
 
-  LOG(INFO) << "Start timer to remove onboarding on " << time;
+  LOG(INFO) << "Start timer to remove onboarding " << friendly_date_and_time;
 }
 
 void AdsServiceImpl::MaybeShowMyFirstAdNotification() {
@@ -1891,13 +1893,13 @@ void AdsServiceImpl::GetClientInfo(ads::ClientInfo* client_info) const {
 }
 
 std::string AdsServiceImpl::GetLocale() const {
-  return LocaleHelper::GetInstance()->GetLocale();
+  return brave_l10n::LocaleHelper::GetInstance()->GetLocale();
 }
 
 const std::string AdsServiceImpl::GetCountryCode() const {
   const std::string locale = GetLocale();
   const std::string country_code =
-      LocaleHelper::GetInstance()->GetCountryCode(locale);
+      brave_l10n::LocaleHelper::GetInstance()->GetCountryCode(locale);
   return country_code;
 }
 
@@ -2060,11 +2062,12 @@ void AdsServiceImpl::URLRequest(
 }
 
 void AdsServiceImpl::Save(
-    const std::string& name,
+    const std::string& path,
     const std::string& value,
     ads::ResultCallback callback) {
-  base::ImportantFileWriter writer(
-      base_path_.AppendASCII(name), file_task_runner_);
+  base::FilePath file_path(path);
+
+  base::ImportantFileWriter writer(file_path, file_task_runner_);
 
   writer.RegisterOnNextWriteCallbacks(
       base::Closure(),
@@ -2078,22 +2081,30 @@ void AdsServiceImpl::Save(
 }
 
 void AdsServiceImpl::Load(
-    const std::string& name,
+    const std::string& path,
     ads::LoadCallback callback) {
+  base::FilePath file_path(path);
+
   base::PostTaskAndReplyWithResult(file_task_runner_.get(), FROM_HERE,
-      base::BindOnce(&LoadOnFileTaskRunner, base_path_.AppendASCII(name)),
+      base::BindOnce(&LoadOnFileTaskRunner, file_path),
       base::BindOnce(&AdsServiceImpl::OnLoaded,
                      AsWeakPtr(),
                      std::move(callback)));
 }
 
 void AdsServiceImpl::Reset(
-    const std::string& name,
+    const std::string& path,
     ads::ResultCallback callback) {
+  base::FilePath file_path(path);
+
   base::PostTaskAndReplyWithResult(file_task_runner_.get(), FROM_HERE,
-      base::BindOnce(&ResetOnFileTaskRunner, base_path_.AppendASCII(name)),
+      base::BindOnce(&ResetOnFileTaskRunner, file_path),
       base::BindOnce(&AdsServiceImpl::OnReset,
           AsWeakPtr(), std::move(callback)));
+}
+
+std::string AdsServiceImpl::GetPath() {
+  return base_path_.value();
 }
 
 std::string AdsServiceImpl::LoadJsonSchema(

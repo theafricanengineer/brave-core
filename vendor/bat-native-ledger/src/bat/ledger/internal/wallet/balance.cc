@@ -115,7 +115,9 @@ void Balance::GetUnBlindedTokens(
       *balance,
       callback,
       _1);
-  ledger_->GetAllUnblindedTokens(tokens_callback);
+  ledger_->GetSpendableUnblindedTokensByBatchTypes(
+      {ledger::CredsBatchType::PROMOTION},
+      tokens_callback);
 }
 
 void Balance::OnGetUnBlindedTokens(
@@ -177,7 +179,7 @@ void Balance::OnUpholdFetchBalance(ledger::Balance info,
 
   info_ptr->wallets.insert(std::make_pair(ledger::kWalletUphold, balance));
   info_ptr->total += balance;
-  callback(ledger::Result::LEDGER_OK, std::move(info_ptr));
+  callback(result, std::move(info_ptr));
 }
 
 // static

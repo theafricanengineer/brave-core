@@ -39,7 +39,6 @@
 #include "brave/browser/ui/webui/brave_rewards_source.h"
 #include "brave/components/brave_rewards/common/pref_names.h"
 #include "brave/common/brave_channel_info.h"
-#include "brave/common/pref_names.h"
 #include "brave/components/brave_ads/browser/ads_service.h"
 #include "brave/components/brave_ads/browser/ads_service_factory.h"
 #include "brave/components/brave_ads/browser/buildflags/buildflags.h"
@@ -53,7 +52,7 @@
 #include "brave/components/brave_rewards/browser/rewards_notification_service.h"
 #include "brave/components/brave_rewards/browser/rewards_notification_service_impl.h"
 #include "brave/components/brave_rewards/browser/rewards_p3a.h"
-#include "brave/components/brave_rewards/browser/rewards_service_factory.h"
+#include "brave/browser/brave_rewards/rewards_service_factory.h"
 #include "brave/components/brave_rewards/browser/rewards_service_observer.h"
 #include "brave/components/brave_rewards/browser/static_values.h"
 #include "brave/components/brave_rewards/browser/switches.h"
@@ -71,7 +70,6 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/url_data_source.h"
 #include "content/public/common/service_manager_connection.h"
-#include "extensions/buildflags/buildflags.h"
 #include "net/base/escape.h"
 #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
 #include "net/base/url_util.h"
@@ -92,8 +90,8 @@
 #include "components/grit/components_resources.h"
 #endif
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-#include "brave/components/brave_rewards/browser/extension_rewards_service_observer.h"
+#if BUILDFLAG(ENABLE_GREASELION)
+#include "brave/components/greaselion/browser/greaselion_service.h"
 #endif
 
 using net::registry_controlled_domains::INCLUDE_PRIVATE_REGISTRIES;
@@ -343,13 +341,18 @@ const base::FilePath::StringType kPublishers_list("publishers_list");
 const base::FilePath::StringType kRewardsStatePath("rewards_service");
 #endif
 
+#if BUILDFLAG(ENABLE_GREASELION)
+RewardsServiceImpl::RewardsServiceImpl(
+    Profile* profile,
+    greaselion::GreaselionService* greaselion_service)
+#else
 RewardsServiceImpl::RewardsServiceImpl(Profile* profile)
-    : profile_(profile),
-      bat_ledger_client_binding_(new bat_ledger::LedgerClientMojoProxy(this)),
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-      extension_rewards_service_observer_(
-          std::make_unique<ExtensionRewardsServiceObserver>(profile_)),
 #endif
+    : profile_(profile),
+#if BUILDFLAG(ENABLE_GREASELION)
+      greaselion_service_(greaselion_service),
+#endif
+      bat_ledger_client_binding_(new bat_ledger::LedgerClientMojoProxy(this)),
       file_task_runner_(base::CreateSequencedTaskRunner(
           {base::ThreadPool(), base::MayBlock(),
            base::TaskPriority::USER_VISIBLE,
@@ -361,10 +364,6 @@ RewardsServiceImpl::RewardsServiceImpl(Profile* profile)
       rewards_base_path_(profile_->GetPath().Append(kRewardsStatePath)),
       rewards_database_(new RewardsDatabase(publisher_info_db_path_)),
       notification_service_(new RewardsNotificationServiceImpl(profile)),
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-      private_observer_(
-          std::make_unique<ExtensionRewardsServiceObserver>(profile_)),
-#endif
       next_timer_id_(0),
       reset_states_(false) {
   file_task_runner_->PostTask(
@@ -386,12 +385,22 @@ void RewardsServiceImpl::ConnectionClosed() {
       base::TimeDelta::FromSeconds(1));
 }
 
-void RewardsServiceImpl::Init() {
+void RewardsServiceImpl::Init(
+    std::unique_ptr<RewardsServiceObserver> extension_observer,
+    std::unique_ptr<RewardsServicePrivateObserver> private_observer,
+    std::unique_ptr<RewardsNotificationServiceObserver> notification_observer) {
+  notification_service_->Init(std::move(notification_observer));
   AddObserver(notification_service_.get());
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  AddObserver(extension_rewards_service_observer_.get());
-  private_observers_.AddObserver(private_observer_.get());
-#endif
+
+  if (extension_observer) {
+    extension_observer_ = std::move(extension_observer);
+    AddObserver(extension_observer_.get());
+  }
+
+  if (private_observer) {
+    private_observer_ = std::move(private_observer);
+    private_observers_.AddObserver(private_observer_.get());
+  }
 
   StartLedger();
 }
@@ -742,10 +751,15 @@ std::string RewardsServiceImpl::URIEncode(const std::string& value) {
 
 void RewardsServiceImpl::Shutdown() {
   RemoveObserver(notification_service_.get());
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  RemoveObserver(extension_rewards_service_observer_.get());
-  private_observers_.RemoveObserver(private_observer_.get());
-#endif
+
+  if (extension_observer_) {
+    RemoveObserver(extension_observer_.get());
+  }
+
+  if (private_observer_) {
+    private_observers_.RemoveObserver(private_observer_.get());
+  }
+
   BitmapFetcherService* image_service =
       BitmapFetcherServiceFactory::GetForBrowserContext(profile_);
   if (image_service) {
@@ -850,15 +864,8 @@ void RewardsServiceImpl::OnGetRewardsInternalsInfo(
   rewards_internals_info->user_id = info->user_id;
   rewards_internals_info->boot_stamp = info->boot_stamp;
 
-  for (const auto& item : info->current_reconciles) {
-    ReconcileInfo reconcile_info;
-    reconcile_info.viewing_id_ = item.second->viewing_id;
-    reconcile_info.amount_ = item.second->amount;
-    reconcile_info.retry_step_ =
-        static_cast<ContributionRetry>(item.second->retry_step);
-    reconcile_info.retry_level_ = item.second->retry_level;
-    rewards_internals_info->current_reconciles[item.first] = reconcile_info;
-  }
+  // TODO(https://github.com/brave/brave-browser/issues/8633)
+  // add active contributions
 
   std::move(callback).Run(std::move(rewards_internals_info));
 }
@@ -885,7 +892,7 @@ void RewardsServiceImpl::OnRecoverWallet(
 
 void RewardsServiceImpl::OnReconcileComplete(
     const ledger::Result result,
-    const std::string& viewing_id,
+    const std::string& contribution_id,
     const double amount,
     const ledger::RewardsType type) {
   if (result == ledger::Result::LEDGER_OK &&
@@ -896,7 +903,7 @@ void RewardsServiceImpl::OnReconcileComplete(
   for (auto& observer : observers_)
     observer.OnReconcileComplete(this,
                                  static_cast<int>(result),
-                                 viewing_id,
+                                 contribution_id,
                                  amount,
                                  static_cast<int>(type));
 }
@@ -1447,6 +1454,12 @@ void RewardsServiceImpl::SetRewardsMainEnabled(bool enabled) {
   SetRewardsMainEnabledPref(enabled);
   bat_ledger_->SetRewardsMainEnabled(enabled);
   TriggerOnRewardsMainEnabled(enabled);
+#if BUILDFLAG(ENABLE_GREASELION)
+  if (greaselion_service_) {
+    greaselion_service_->SetFeatureEnabled(greaselion::REWARDS, enabled);
+    greaselion_service_->SetFeatureEnabled(greaselion::TWITTER_TIPS, enabled);
+  }
+#endif
 }
 
 void RewardsServiceImpl::GetRewardsMainEnabled(
@@ -2870,6 +2883,8 @@ void RewardsServiceImpl::GetExternalWallets(
   for (const auto& it : dict->DictItems()) {
     ledger::ExternalWalletPtr wallet = ledger::ExternalWallet::New();
 
+    wallet->type = it.first;
+
     auto* token = it.second.FindKey("token");
     if (token && token->is_string()) {
       wallet->token = token->GetString();
@@ -3460,6 +3475,37 @@ void RewardsServiceImpl::OnGetAllMonthlyReportIds(
     GetAllMonthlyReportIdsCallback callback,
     const std::vector<std::string>& ids) {
   std::move(callback).Run(ids);
+}
+
+void RewardsServiceImpl::GetAllPromotions(GetAllPromotionsCallback callback) {
+  bat_ledger_->GetAllPromotions(
+      base::BindOnce(&RewardsServiceImpl::OnGetAllPromotions,
+                     AsWeakPtr(),
+                     std::move(callback)));
+}
+
+void RewardsServiceImpl::OnGetAllPromotions(
+    GetAllPromotionsCallback callback,
+    base::flat_map<std::string, ledger::PromotionPtr> promotions) {
+  std::vector<brave_rewards::Promotion> converted_rewards;
+  for (const auto& promotion : promotions) {
+    if (!promotion.second) {
+      continue;
+    }
+
+    brave_rewards::Promotion properties;
+    properties.promotion_id = promotion.second->id;
+    properties.amount = promotion.second->approximate_value;
+    properties.expires_at = promotion.second->expires_at;
+    properties.type = static_cast<uint32_t>(promotion.second->type);
+    properties.status = static_cast<uint32_t>(promotion.second->status);
+    properties.claimed_at = promotion.second->claimed_at;
+    properties.legacy_claimed = promotion.second->legacy_claimed;
+    properties.claim_id = promotion.second->claim_id;
+    properties.version = promotion.second->version;
+    converted_rewards.push_back(properties);
+  }
+  std::move(callback).Run(std::move(converted_rewards));
 }
 
 }  // namespace brave_rewards

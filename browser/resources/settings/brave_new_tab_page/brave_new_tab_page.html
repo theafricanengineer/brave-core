@@ -29,7 +29,7 @@
       <div class="flex">
         <div class="label primary-title">$i18n{braveNewTabCustomizeDashboard}</div>
         <div class="normalize-margin">
-          <template is="dom-if" if="[[shouldShowBackgroundImageOptions_()]]">
+          <template is="dom-if" if="[[!isSuperReferralActive_]]">
             <settings-toggle-button id="showBackgroundImageControlType"
                 class="secondary borderless"
                 pref="{{prefs.brave.new_tab_page.show_background_image}}"
@@ -37,7 +37,7 @@
             </settings-toggle-button>
             <settings-toggle-button
                 class="nested-section borderless"
-                pref="[[toggleBrandedBackgroundOption_(prefs.brave.new_tab_page.show_background_image.value, prefs.brave.new_tab_page.show_branded_background_image)]]"
+                pref="{{prefs.brave.new_tab_page.show_branded_background_image}}"
                 disabled="{{!prefs.brave.new_tab_page.show_background_image.value}}"
                 label="$i18n{braveNewTabSponsoredImages}">
             </settings-toggle-button>
@@ -54,10 +54,12 @@
           pref="{{prefs.brave.new_tab_page.show_rewards}}"
           label="$i18n{braveNewTabBraveRewards}">
       </settings-toggle-button>
-      <settings-toggle-button
-          pref="{{prefs.brave.new_tab_page.show_binance}}"
-          label="$i18n{braveNewTabBinance}">
-      </settings-toggle-button>
+      <template is="dom-if" if="[[isBinanceSupported_]]">
+        <settings-toggle-button
+            pref="{{prefs.brave.new_tab_page.show_binance}}"
+            label="$i18n{braveNewTabBinance}">
+        </settings-toggle-button>
+      </template>
       <settings-toggle-button
           pref="{{prefs.brave.new_tab_page.show_top_sites}}"
           label="$i18n{braveNewTabTopSites}">

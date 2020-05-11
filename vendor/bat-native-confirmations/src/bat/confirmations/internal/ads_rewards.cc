@@ -11,6 +11,7 @@
 #include "bat/confirmations/internal/get_payment_balance_request.h"
 #include "bat/confirmations/internal/get_ad_grants_request.h"
 #include "bat/confirmations/internal/static_values.h"
+#include "bat/confirmations/internal/time_util.h"
 
 #include "net/http/http_status_code.h"
 #include "brave_base/random.h"
@@ -35,11 +36,6 @@ AdsRewards::~AdsRewards() = default;
 void AdsRewards::Update(
     const WalletInfo& wallet_info,
     const bool should_refresh) {
-  DCHECK(!wallet_info.payment_id.empty());
-  DCHECK(!wallet_info.private_key.empty());
-
-  wallet_info_ = WalletInfo(wallet_info);
-
   Update();
 
   if (!should_refresh) {
@@ -47,6 +43,12 @@ void AdsRewards::Update(
   }
 
   if (retry_timer_.IsRunning()) {
+    return;
+  }
+
+  wallet_info_ = wallet_info;
+  if (!wallet_info_.IsValid()) {
+    BLOG(ERROR) << "Failed to fetch ads rewards due to invalid wallet";
     return;
   }
 
@@ -222,7 +224,7 @@ void AdsRewards::OnAdsRewards(const Result result) {
         kRetryAdsRewardsAfterSeconds, base::BindOnce(&AdsRewards::OnRetry,
             base::Unretained(this)));
 
-    BLOG(INFO) << "Retry getting ad grants at " << time;
+    BLOG(INFO) << "Retry getting ad grants " << FriendlyDateAndTime(time);
 
     return;
   }

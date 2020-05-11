@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "base/gtest_prod_util.h"
-#include "bat/ledger/internal/properties/publisher_properties.h"
 #include "bat/ledger/internal/properties/publisher_settings_properties.h"
 #include "bat/ledger/ledger.h"
 
@@ -28,10 +27,6 @@ namespace braveledger_publisher {
 
 class PublisherServerList;
 
-using ParsePublisherListCallback = std::function<void(const ledger::Result)>;
-using DownloadServerPublisherListCallback =
-    std::function<void(const ledger::Result)>;
-
 class Publisher {
  public:
   explicit Publisher(bat_ledger::LedgerImpl* ledger);
@@ -45,7 +40,7 @@ class Publisher {
       const std::string& publisher_key,
       ledger::OnRefreshPublisherCallback callback);
 
-  void SetPublisherServerListTimer();
+  void SetPublisherServerListTimer(const bool rewards_enabled);
 
   bool loadState(const std::string& data);
 
@@ -93,7 +88,7 @@ class Publisher {
 
   void ParsePublisherList(
       const std::string& data,
-      ParsePublisherListCallback callback);
+      ledger::ResultCallback callback);
 
   void getPublisherActivityFromUrl(
       uint64_t windowId,
@@ -212,9 +207,6 @@ class Publisher {
   bool GetMigrateScore() const;
 
   void SetMigrateScore(bool value);
-
-  bool isPublisherVisible(
-      const ledger::PublisherProperties& publisher_st);
 
   void OnSaveVisitInternal(
     ledger::Result result,

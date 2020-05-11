@@ -7,7 +7,7 @@ import * as React from 'react'
 import { LocaleContext } from '../localeContext'
 import { Container, LoadIcon } from './style'
 
-export function PaymentProcessing (props: {}) {
+export function PaymentProcessing () {
   const locale = React.useContext(LocaleContext)
   return (
     <Container>

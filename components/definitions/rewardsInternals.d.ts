@@ -4,6 +4,7 @@ declare namespace RewardsInternals {
   }
 
   export interface State {
+    balance: Balance
     isRewardsEnabled: boolean
     info: {
       isKeyInfoSeedValid: boolean
@@ -13,6 +14,7 @@ declare namespace RewardsInternals {
       userId: string
       bootStamp: number
     }
+    promotions: Promotion[]
   }
 
   export interface CurrentReconcile {
@@ -20,5 +22,22 @@ declare namespace RewardsInternals {
     amount: string
     retryStep: number
     retryLevel: number
+  }
+
+  export interface Balance {
+    total: number
+    wallets: Record<string, number>
+  }
+
+  export interface Promotion {
+    amount: number
+    promotionId: string
+    expiresAt: number
+    type: number
+    status: number
+    claimedAt: number
+    legacyClaimed: boolean
+    claimId: string
+    version: number
   }
 }

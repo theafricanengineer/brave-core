@@ -19,9 +19,6 @@
 #include "bat/ledger/internal/contribution/contribution.h"
 #include "bat/ledger/internal/database/database.h"
 #include "bat/ledger/internal/logging.h"
-#include "bat/ledger/internal/properties/ballot_properties.h"
-#include "bat/ledger/internal/properties/publisher_votes_properties.h"
-#include "bat/ledger/internal/properties/transaction_properties.h"
 #include "bat/ledger/internal/properties/wallet_info_properties.h"
 #include "bat/ledger/internal/wallet/wallet.h"
 #include "bat/ledger/ledger_client.h"
@@ -61,6 +58,10 @@ class Database;
 
 namespace braveledger_report {
 class Report;
+}
+
+namespace braveledger_sku {
+class SKU;
 }
 
 namespace confirmations {
@@ -189,7 +190,7 @@ class LedgerImpl : public ledger::Ledger {
   void LoadNicewareList(ledger::GetNicewareListCallback callback);
 
   void SetConfirmationsWalletInfo(
-      const ledger::WalletInfoProperties& wallet_info);
+      const ledger::WalletInfoProperties& wallet_info_properties);
 
   void LoadLedgerState(ledger::OnLoadCallback callback);
 
@@ -233,14 +234,6 @@ class LedgerImpl : public ledger::Ledger {
       const std::string& content_type,
       const ledger::UrlMethod method,
       ledger::LoadURLCallback callback);
-
-  // DEPRECATED
-  void ReconcileComplete(
-      const ledger::Result result,
-      const double amount,
-      const std::string& viewing_id,
-      const ledger::RewardsType type,
-      const bool delete_reconcile = true);
 
   virtual void ContributionCompleted(
       const ledger::Result result,
@@ -297,11 +290,6 @@ class LedgerImpl : public ledger::Ledger {
       const ledger::ReportType type,
       const double amount);
 
-  ledger::CurrentReconcileProperties GetReconcileById(
-      const std::string& viewingId);
-
-  void RemoveReconcileById(const std::string& viewingId);
-
   void FetchFavIcon(const std::string& url,
                     const std::string& favicon_key,
                     ledger::FetchIconCallback callback);
@@ -337,13 +325,6 @@ class LedgerImpl : public ledger::Ledger {
 
   void ResetReconcileStamp();
 
-  bool UpdateReconcile(
-      const ledger::CurrentReconcileProperties& reconcile);
-
-  void AddReconcile(
-      const std::string& viewing_id,
-      const ledger::CurrentReconcileProperties& reconcile);
-
   virtual const std::string& GetPaymentId() const;
 
   const std::string& GetPersonaId() const;
@@ -366,46 +347,14 @@ class LedgerImpl : public ledger::Ledger {
 
   void SetWalletInfo(const ledger::WalletInfoProperties& info);
 
-  const confirmations::WalletInfo GetConfirmationsWalletInfo(
-      const ledger::WalletInfoProperties& info) const;
-
   const ledger::WalletProperties& GetWalletProperties() const;
 
   void SetWalletProperties(
       ledger::WalletProperties* properties);
 
-  unsigned int GetDays() const;
-
-  void SetDays(unsigned int days);
-
-  const ledger::Transactions& GetTransactions() const;
-
-  void SetTransactions(
-      const ledger::Transactions& transactions);
-
-  const ledger::Ballots& GetBallots() const;
-
-  void SetBallots(
-      const ledger::Ballots& ballots);
-
-  const ledger::PublisherVotes& GetPublisherVotes() const;
-
-  void SetPublisherVotes(
-      const ledger::PublisherVotes& publisher_votes);
-
-  const std::string& GetCurrency() const;
-
-  void SetCurrency(const std::string& currency);
-
   uint64_t GetBootStamp() const override;
 
   void SetBootStamp(uint64_t stamp);
-
-  const std::string& GetMasterUserToken() const;
-
-  void SetMasterUserToken(const std::string& token);
-
-  bool ReconcileExists(const std::string& viewingId);
 
   void SaveContributionInfo(
       ledger::ContributionInfoPtr info,
@@ -417,12 +366,6 @@ class LedgerImpl : public ledger::Ledger {
       uint32_t /* next_record */);
 
   void SetTimer(uint64_t time_offset, uint32_t* timer_id) const;
-
-  bool AddReconcileStep(const std::string& viewing_id,
-                        ledger::ContributionRetry step,
-                        int level = -1);
-
-  const ledger::CurrentReconciles& GetCurrentReconciles() const;
 
   double GetDefaultContributionAmount() override;
 
@@ -623,11 +566,10 @@ class LedgerImpl : public ledger::Ledger {
     ledger::UnblindedTokenList list,
     ledger::ResultCallback callback);
 
-  virtual void GetAllUnblindedTokens(
-      ledger::GetUnblindedTokenListCallback callback);
-
-  virtual void DeleteUnblindedTokens(
-      const std::vector<std::string>& id_list,
+  virtual void MarkUblindedTokensAsSpent(
+      const std::vector<std::string>& ids,
+      ledger::RewardsType redeem_type,
+      const std::string& redeem_id,
       ledger::ResultCallback callback);
 
   void GetUnblindedTokensByTriggerIds(
@@ -650,15 +592,19 @@ class LedgerImpl : public ledger::Ledger {
       const int year,
       ledger::GetContributionReportCallback callback) override;
 
-  void GetIncompleteContributions(
-      const ledger::ContributionProcessor processor,
+  void GetNotCompletedContributions(
       ledger::ContributionInfoListCallback callback);
 
   virtual void GetContributionInfo(
       const std::string& contribution_id,
       ledger::GetContributionInfoCallback callback);
 
-  void UpdateContributionInfoStepAndCount(
+  virtual void UpdateContributionInfoStep(
+      const std::string& contribution_id,
+      const ledger::ContributionStep step,
+      ledger::ResultCallback callback);
+
+  virtual void UpdateContributionInfoStepAndCount(
       const std::string& contribution_id,
       const ledger::ContributionStep step,
       const int32_t retry_count,
@@ -727,15 +673,70 @@ class LedgerImpl : public ledger::Ledger {
       const std::vector<ledger::PromotionType>& types,
       ledger::GetPromotionListCallback callback);
 
-  void CheckUnblindedTokensExpiration(ledger::ResultCallback callback);
-
   void UpdateCredsBatchStatus(
       const std::string& trigger_id,
       const ledger::CredsBatchType trigger_type,
       const ledger::CredsBatchStatus status,
       ledger::ResultCallback callback);
 
+  void SaveSKUOrder(ledger::SKUOrderPtr order, ledger::ResultCallback callback);
+
+  void SaveSKUTransaction(
+      ledger::SKUTransactionPtr transaction,
+      ledger::ResultCallback callback);
+
+  void SaveSKUExternalTransaction(
+      const std::string& transaction_id,
+      const std::string& external_transaction_id,
+      ledger::ResultCallback callback);
+
+  void UpdateSKUOrderStatus(
+      const std::string& order_id,
+      const ledger::SKUOrderStatus status,
+      ledger::ResultCallback callback);
+
+  void TransferFunds(
+      const ledger::SKUTransaction& transaction,
+      const std::string& destination,
+      ledger::ExternalWalletPtr wallet,
+      ledger::TransactionCallback callback);
+
+  void GetSKUOrder(
+      const std::string& order_id,
+      ledger::GetSKUOrderCallback callback);
+
+  void ProcessSKU(
+      const std::vector<ledger::SKUOrderItem>& items,
+      ledger::ExternalWalletPtr wallet,
+      ledger::SKUOrderCallback callback) override;
+
+  void RetrySKU(
+      const std::string& order_id,
+      ledger::ExternalWalletPtr wallet,
+      ledger::SKUOrderCallback callback);
+
+  void GetSKUOrderByContributionId(
+      const std::string& contribution_id,
+      ledger::GetSKUOrderCallback callback);
+
+  void SaveContributionIdForSKUOrder(
+      const std::string& order_id,
+      const std::string& contribution_id,
+      ledger::ResultCallback callback);
+
+  void GetSKUTransactionByOrderId(
+      const std::string& order_id,
+      ledger::GetSKUTransactionCallback callback);
+
+  virtual void GetSpendableUnblindedTokensByBatchTypes(
+      const std::vector<ledger::CredsBatchType>& batch_types,
+      ledger::GetUnblindedTokenListCallback callback);
+
  private:
+  void MaybeInitializeConfirmations(
+      const bool execute_create_script,
+      ledger::ResultCallback callback);
+
   void InitializeConfirmations(
       const bool execute_create_script,
       ledger::ResultCallback callback);
@@ -744,6 +745,19 @@ class LedgerImpl : public ledger::Ledger {
       const bool success,
       const bool execute_create_script,
       ledger::ResultCallback callback);
+
+  void InitializeDatabase(
+      const bool execute_create_script,
+      ledger::ResultCallback callback);
+
+  void StartConfirmations();
+
+  void OnConfirmationsStarted(
+      const bool success);
+
+  void ShutdownConfirmations();
+
+  bool IsConfirmationsRunning();
 
   void OnLoad(ledger::VisitDataPtr visit_data,
               const uint64_t& current_time) override;
@@ -823,6 +837,7 @@ class LedgerImpl : public ledger::Ledger {
   std::unique_ptr<braveledger_database::Database> bat_database_;
   std::unique_ptr<confirmations::Confirmations> bat_confirmations_;
   std::unique_ptr<braveledger_report::Report> bat_report_;
+  std::unique_ptr<braveledger_sku::SKU> bat_sku_;
   scoped_refptr<base::SequencedTaskRunner> task_runner_;
   bool initialized_task_scheduler_;
 

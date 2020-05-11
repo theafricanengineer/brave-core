@@ -29,6 +29,7 @@ import { SortEnd } from 'react-sortable-hoc'
 import * as newTabActions from '../../actions/new_tab_actions'
 import * as gridSitesActions from '../../actions/grid_sites_actions'
 import { getLocale } from '../../../common/locale'
+import currencyData from '../../components/default/binance/data'
 
 interface Props {
   newTabData: NewTab.State
@@ -98,13 +99,6 @@ class NewTabPage extends React.Component<Props, State> {
     if (GetShouldShowBrandedWallpaperNotification(this.props)) {
       this.trackBrandedWallpaperNotificationAutoDismiss()
     }
-
-    // Migratory check in the event that rewards is off
-    // when receiving the upgrade with the Binance widget.
-    const { showRewards } = this.props.newTabData
-    if (!showRewards) {
-      this.props.actions.setCurrentStackWidget('binance')
-    }
   }
 
   componentDidUpdate (prevProps: Props) {
@@ -129,6 +123,20 @@ class NewTabPage extends React.Component<Props, State> {
       this.stopWaitingForBrandedWallpaperNotificationAutoDismiss()
     }
 
+    // Handles updates from brave://settings/newTab
+    const oldShowRewards = prevProps.newTabData.showRewards
+    const oldShowBinance = prevProps.newTabData.showBinance
+    const { showRewards, showBinance } = this.props.newTabData
+
+    if (!oldShowRewards && showRewards) {
+      this.props.actions.setForegroundStackWidget('rewards')
+    } else if (!oldShowBinance && showBinance) {
+      this.props.actions.setForegroundStackWidget('binance')
+    } else if (oldShowRewards && !showRewards) {
+      this.props.actions.removeStackWidget('rewards')
+    } else if (oldShowBinance && !showBinance) {
+      this.props.actions.removeStackWidget('binance')
+    }
   }
 
   trackCachedImage () {
@@ -192,36 +200,24 @@ class NewTabPage extends React.Component<Props, State> {
   }
 
   toggleShowRewards = () => {
-    const {
-      currentStackWidget,
-      showBinance,
-      showRewards
-    } = this.props.newTabData
+    const { showRewards } = this.props.newTabData
 
-    if (currentStackWidget === 'rewards' && showRewards) {
-      this.props.actions.setCurrentStackWidget('binance')
-    } else if (!showBinance) {
-      this.props.actions.setCurrentStackWidget('rewards')
-    } else if (!showRewards) {
-      this.props.actions.setCurrentStackWidget('rewards')
+    if (showRewards) {
+      this.removeStackWidget('rewards')
+    } else {
+      this.setForegroundStackWidget('rewards')
     }
 
     this.props.saveShowRewards(!showRewards)
   }
 
   toggleShowBinance = () => {
-    const {
-      currentStackWidget,
-      showBinance,
-      showRewards
-    } = this.props.newTabData
+    const { showBinance } = this.props.newTabData
 
-    if (currentStackWidget === 'binance' && showBinance) {
-      this.props.actions.setCurrentStackWidget('rewards')
-    } else if (!showRewards) {
-      this.props.actions.setCurrentStackWidget('binance')
-    } else if (!showBinance) {
-      this.props.actions.setCurrentStackWidget('binance')
+    if (showBinance) {
+      this.removeStackWidget('binance')
+    } else {
+      this.setForegroundStackWidget('binance')
     }
 
     this.props.saveShowBinance(!showBinance)
@@ -232,10 +228,6 @@ class NewTabPage extends React.Component<Props, State> {
         this.disconnectBinance()
       })
     }
-  }
-
-  setBinanceBalances = (balances: Record<string, string>) => {
-    this.props.actions.onBinanceAccountBalances(balances)
   }
 
   onBinanceClientUrl = (clientUrl: string) => {
@@ -282,16 +274,8 @@ class NewTabPage extends React.Component<Props, State> {
     this.props.actions.onBinanceUserTLD(userTLD)
   }
 
-  setBTCUSDPrice = (price: string) => {
-    this.props.actions.onBTCUSDPrice(price)
-  }
-
-  setAssetBTCPrice = (ticker: string, price: string) => {
-    this.props.actions.onAssetBTCPrice(ticker, price)
-  }
-
-  setAssetUSDPrice = (ticker: string, price: string) => {
-    this.props.actions.onAssetUSDPrice(ticker, price)
+  setBalanceInfo = (info: Record<string, Record<string, string>>) => {
+    this.props.actions.onAssetsBalanceInfo(info)
   }
 
   setAssetDepositInfo = (symbol: string, address: string, url: string) => {
@@ -336,8 +320,12 @@ class NewTabPage extends React.Component<Props, State> {
     this.setState({ showSettingsMenu: !this.state.showSettingsMenu })
   }
 
-  toggleStackWidget = (widgetId: NewTab.StackWidget) => {
-    this.props.actions.setCurrentStackWidget(widgetId)
+  setForegroundStackWidget = (widget: NewTab.StackWidget) => {
+    this.props.actions.setForegroundStackWidget(widget)
+  }
+
+  removeStackWidget = (widget: NewTab.StackWidget) => {
+    this.props.actions.removeStackWidget(widget)
   }
 
   setInitialAmount = (amount: string) => {
@@ -381,6 +369,23 @@ class NewTabPage extends React.Component<Props, State> {
     this.getConvertAssets()
   }
 
+  getCurrencyList = () => {
+    const { accountBalances, userTLD } = this.props.newTabData.binanceState
+    const { usCurrencies, comCurrencies } = currencyData
+    const baseList = userTLD === 'us' ? usCurrencies : comCurrencies
+
+    if (!accountBalances) {
+      return baseList
+    }
+
+    const accounts = Object.keys(accountBalances)
+    const nonHoldingList = baseList.filter((symbol: string) => {
+      return !accounts.includes(symbol)
+    })
+
+    return accounts.concat(nonHoldingList)
+  }
+
   getConvertAssets = () => {
     chrome.binance.getConvertAssets((assets: any) => {
       for (let asset in assets) {
@@ -392,7 +397,7 @@ class NewTabPage extends React.Component<Props, State> {
   }
 
   fetchBalance = () => {
-    chrome.binance.getAccountBalances((balances: Record<string, string>, success: boolean) => {
+    chrome.binance.getAccountBalances((balances: Record<string, Record<string, string>>, success: boolean) => {
       const hasBalances = Object.keys(balances).length
 
       if (!hasBalances) {
@@ -402,33 +407,23 @@ class NewTabPage extends React.Component<Props, State> {
         return
       }
 
-      chrome.binance.getTickerPrice('BTCUSDT', (price: string) => {
-        this.setAssetUSDPrice('BTC', price)
-        this.setBTCUSDPrice(price)
-        this.setBalanceInfo(balances)
-      })
+      this.setBalanceInfo(balances)
+      this.setDepositInfo()
     })
   }
 
-  setBalanceInfo = (balances: Record<string, string>) => {
-    for (let ticker in balances) {
-      if (ticker !== 'BTC') {
-        chrome.binance.getTickerPrice(`${ticker}BTC`, (price: string) => {
-          this.setAssetBTCPrice(ticker, price)
-        })
-        chrome.binance.getTickerPrice(`${ticker}USDT`, (price: string) => {
-          this.setAssetUSDPrice(ticker, price)
-        })
+  setDepositInfo = () => {
+    chrome.binance.getCoinNetworks((networks: Record<string, string>) => {
+      const currencies = this.getCurrencyList()
+      for (let ticker in networks) {
+        if (currencies.includes(ticker)) {
+          chrome.binance.getDepositInfo(ticker, networks[ticker], (address: string, tag: string) => {
+            this.setAssetDepositInfo(ticker, address, tag)
+            generateQRData((tag || address), ticker, this.setAssetDepositQRCodeSrc)
+          })
+        }
       }
-      chrome.binance.getDepositInfo(ticker, (address: string, url: string) => {
-        this.setAssetDepositInfo(ticker, address, url)
-        generateQRData(address, ticker, this.setAssetDepositQRCodeSrc)
-      })
-    }
-
-    setTimeout(() => {
-      this.setBinanceBalances(balances)
-    }, 1500)
+    })
   }
 
   setAuthInvalid = () => {
@@ -441,30 +436,31 @@ class NewTabPage extends React.Component<Props, State> {
   }
 
   getCryptoContent () {
-    const { currentStackWidget } = this.props.newTabData
+    const { widgetStackOrder } = this.props.newTabData
+    const renderLookup = {
+      'rewards': this.renderRewardsWidget.bind(this),
+      'binance': this.renderBinanceWidget.bind(this)
+    }
 
     return (
       <>
-        {
-          currentStackWidget === 'rewards'
-          ? <>
-              {this.renderBinanceWidget(false)}
-              {this.renderRewardsWidget(true)}
-            </>
-          : <>
-              {this.renderRewardsWidget(false)}
-              {this.renderBinanceWidget(true)}
-            </>
-        }
+        {widgetStackOrder.map((widget: NewTab.StackWidget, i: number) => {
+          const isForeground = i === widgetStackOrder.length - 1
+          return (
+            <div key={`widget-${widget}`}>
+              {renderLookup[widget](isForeground)}
+            </div>
+          )
+        })}
       </>
     )
   }
 
   renderCryptoContent () {
     const { newTabData } = this.props
-    const { showRewards, showBinance } = newTabData
+    const { widgetStackOrder } = newTabData
 
-    if (!showRewards && !showBinance) {
+    if (!widgetStackOrder.length) {
       return null
     }
 
@@ -502,7 +498,7 @@ class NewTabPage extends React.Component<Props, State> {
         preventFocus={false}
         hideWidget={this.toggleShowRewards}
         showContent={showContent}
-        onShowContent={this.toggleStackWidget.bind(this, 'rewards')}
+        onShowContent={this.setForegroundStackWidget.bind(this, 'rewards')}
         onCreateWallet={this.createWallet}
         onEnableAds={this.enableAds}
         onEnableRewards={this.enableRewards}
@@ -544,7 +540,6 @@ class NewTabPage extends React.Component<Props, State> {
         hideWidget={this.toggleShowBinance}
         showContent={showContent}
         onSetHideBalance={this.setHideBalance}
-        onBinanceAccountBalances={this.setBinanceBalances}
         onBinanceClientUrl={this.onBinanceClientUrl}
         onConnectBinance={this.connectBinance}
         onDisconnectBinance={this.disconnectBinance}
@@ -552,7 +547,7 @@ class NewTabPage extends React.Component<Props, State> {
         onValidAuthCode={this.onValidAuthCode}
         onBuyCrypto={this.buyCrypto}
         onBinanceUserTLD={this.onBinanceUserTLD}
-        onShowContent={this.toggleStackWidget.bind(this, 'binance')}
+        onShowContent={this.setForegroundStackWidget.bind(this, 'binance')}
         onSetInitialAmount={this.setInitialAmount}
         onSetInitialAsset={this.setInitialAsset}
         onSetInitialFiat={this.setInitialFiat}
@@ -560,6 +555,7 @@ class NewTabPage extends React.Component<Props, State> {
         onUpdateActions={this.updateActions}
         onDismissAuthInvalid={this.dismissAuthInvalid}
         onSetSelectedView={this.setSelectedView}
+        getCurrencyList={this.getCurrencyList}
       />
     )
   }

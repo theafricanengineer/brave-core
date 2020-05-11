@@ -18,6 +18,7 @@ import("//third_party/widevine/cdm/widevine.gni")
 
 if (is_android) {
   import("//build/config/android/rules.gni")
+  import("//chrome/android/chrome_public_apk_tmpl.gni")
 }
 
 group("fix_brave_test_install_name") {
@@ -38,7 +39,7 @@ group("fix_brave_test_install_name_speedreader") {
   testonly = true
   if (enable_speedreader) {
     deps = [
-      "//brave/vendor/speedreader_rust_ffi:test_speedreader_install_name",
+      "//brave/components/speedreader/rust/ffi:test_install_name_speedreader",
     ]
   }
 }
@@ -111,6 +112,7 @@ test("brave_unit_tests") {
     "//brave/components/brave_shields/browser/https_everywhere_recently_used_cache_unittest.cpp",
     "//brave/components/content_settings/core/browser/brave_content_settings_pref_provider_unittest.cc",
     "//brave/components/content_settings/core/browser/brave_content_settings_utils_unittest.cc",
+    "//brave/components/l10n/common/locale_util_unittest.cc",
     "//brave/components/ntp_background_images/browser/ntp_background_images_service_unittest.cc",
     "//brave/components/ntp_background_images/browser/ntp_background_images_source_unittest.cc",
     "//brave/components/ntp_background_images/browser/view_counter_model_unittest.cc",
@@ -118,6 +120,7 @@ test("brave_unit_tests") {
     "//brave/components/brave_usermodel_parameters/browser/brave_usermodel_parameter_service_unittest.cc",
     "//brave/components/rappor/log_uploader_unittest.cc",
     "//brave/components/translate/core/browser/translate_language_list_unittest.cc",
+    "//brave/components/weekly_storage/weekly_storage_unittest.cc",
     "//brave/third_party/libaddressinput/chromium/chrome_metadata_source_unittest.cc",
     "//brave/vendor/brave_base/random_unittest.cc",
     "//components/bookmarks/browser/bookmark_model_unittest.cc",
@@ -152,6 +155,9 @@ test("brave_unit_tests") {
 
   data = [
     "data/",
+    "//brave/vendor/bat-native-ads/resources/",
+    "//brave/vendor/bat-native-ads/test/data/",
+    "//brave/vendor/bat-native-confirmations/test/data/",
   ]
 
   configs += [
@@ -201,8 +207,10 @@ test("brave_unit_tests") {
       "//brave/browser/autocomplete/brave_autocomplete_provider_client_unittest.cc",
       "//brave/browser/autoplay/autoplay_permission_context_unittest.cc",
       "//brave/components/brave_shields/browser/brave_shields_util_unittest.cc",
-      "//brave/components/omnibox/browser/topsites_provider_unittest.cc",
+      "//brave/components/omnibox/browser/fake_autocomplete_provider_client.cc",
+      "//brave/components/omnibox/browser/fake_autocomplete_provider_client.h",
       "//brave/components/omnibox/browser/suggested_sites_provider_unittest.cc",
+      "//brave/components/omnibox/browser/topsites_provider_unittest.cc",
       "//brave/chromium_src/components/search_engines/brave_template_url_prepopulate_data_unittest.cc",
       "//brave/chromium_src/components/search_engines/brave_template_url_service_util_unittest.cc",
       "//brave/chromium_src/chrome/browser/external_protocol/external_protocol_handler_unittest.cc",
@@ -294,10 +302,10 @@ test("brave_unit_tests") {
       "//brave/components/brave_ads/browser/ads_service_impl_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/client_mock.h",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/client_mock.cc",
-      "//brave/vendor/bat-native-ads/src/bat/ads/internal/locale_helper_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/filters/ads_history_confirmation_filter_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/filters/ads_history_conversion_confirmation_type_filter_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/filters/ads_history_date_range_filter_unittest.cc",
+      "//brave/vendor/bat-native-ads/src/bat/ads/internal/frequency_capping/exclusion_rules/conversion_frequency_cap_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/frequency_capping/exclusion_rules/daily_cap_frequency_cap_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/frequency_capping/exclusion_rules/per_day_frequency_cap_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/frequency_capping/exclusion_rules/per_hour_frequency_cap_unittest.cc",
@@ -310,6 +318,7 @@ test("brave_unit_tests") {
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/purchase_intent/funnel_sites_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/purchase_intent/keywords_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/purchase_intent/purchase_intent_classifier_unittest.cc",
+      "//brave/vendor/bat-native-ads/src/bat/ads/internal/url_util_unittest.cc",
     ]
   }
 
@@ -324,10 +333,8 @@ test("brave_unit_tests") {
   if (brave_rewards_enabled) {
     sources += [
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/database/database_activity_info_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/contribution/contribution_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/contribution/contribution_unblinded_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/contribution/contribution_util_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/contribution/phase_two_unittest.cc",
+      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/contribution/contribution_monthly_util_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/media/helper_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/media/reddit_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/media/github_unittest.cc",
@@ -341,19 +348,9 @@ test("brave_unit_tests") {
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/bat_helper_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/bat_util_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/publisher/publisher_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/ballot_state_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/client_state_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/current_reconcile_state_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/publisher_settings_state_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/publisher_state_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/publisher_vote_state_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/publisher_votes_state_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/reconcile_direction_state_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/reconcile_request_state_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/report_balance_state_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/surveyor_state_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/transaction_ballot_state_unittest.cc",
-      "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/transaction_state_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/unsigned_tx_state_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/wallet_info_state_unittest.cc",
       "//brave/vendor/bat-native-ledger/src/bat/ledger/internal/state/wallet_state_unittest.cc",
@@ -369,27 +366,40 @@ test("brave_unit_tests") {
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/ads_is_mobile_unittest.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/ads_client_mock.cc",
       "//brave/vendor/bat-native-ads/src/bat/ads/internal/ads_client_mock.h",
-      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/platform_helper_mock.h",
       "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/ad_grants_unittest.cc",
       "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/payments_unittest.cc",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_impl_mock.cc",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_impl_mock.h",
       "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_create_confirmation_request_unittest.cc",
       "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_fetch_payment_token_request_unittest.cc",
-      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_get_signed_tokens_request_unittest.cc",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/get_signed_tokens_request_unittest.cc",
       "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_redeem_payment_tokens_request_unittest.cc",
-      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_request_signed_tokens_request_unittest.cc",
-      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_security_helper_unittest.cc",
-      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_string_helper_unittest.cc",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/request_signed_tokens_request_unittest.cc",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/security_helper_unittest.cc",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/string_helper_unittest.cc",
       "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_unblinded_tokens_unittest.cc",
       "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_client_mock.cc",
       "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/confirmations_client_mock.h",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/platform_helper_mock.cc",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/platform_helper_mock.h",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/unittest_utils.cc",
+      "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/unittest_utils.h",
     ]
 
     if (!is_android) {
-      # TODO(samartnik): this should work on Android, we will review it once unit tests are set up on CI
       sources += [
-        # This should probably work, but returns UNKNOWN status for some tests
+        # TODO(https://github.com/brave/brave-browser/issues/9550):
+        # Temporarily disable Brave Ads tests which are passing in the detailed
+        # logs but failing in the summary
+
+        "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/redeem_token_mock.cc",
+        "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/redeem_token_mock.h",
+        "//brave/vendor/bat-native-confirmations/src/bat/confirmations/internal/redeem_token_unittest.cc",
         "//brave/vendor/bat-native-ads/src/bat/ads/internal/ads_tabs_unittest.cc",
-        # Fails to load json files from folder 'brave/vendor/bat-native-usermodel/test/data'
+
+        # TODO(https://github.com/brave-intl/bat-native-usermodel/issues/26):
+        # Fix bat-native-user-model unittests fail to load data files from
+        # 'brave/vendor/bat-native-usermodel/test/data'
         "//brave/vendor/bat-native-usermodel/test/usermodel_unittest.cc",
       ]
     }
@@ -475,12 +485,21 @@ test("brave_unit_tests") {
       "//brave/components/brave_perf_predictor/browser/named_third_party_registry_unittest.cc",
       "//brave/components/brave_perf_predictor/browser/bandwidth_linreg_unittest.cc",
       "//brave/components/brave_perf_predictor/browser/bandwidth_savings_predictor_unittest.cc",
-      "//brave/components/brave_perf_predictor/browser/p3a_bandwidth_savings_permanent_state_unittest.cc",
       "//brave/components/brave_perf_predictor/browser/p3a_bandwidth_savings_tracker_unittest.cc",
     ]
 
     deps += [
       "//brave/components/brave_perf_predictor/browser",
+    ]
+  }
+
+  if (enable_speedreader) {
+    sources += [
+      "//brave/components/speedreader/rust/ffi/speedreader_unittest.cc",
+    ]
+
+    deps += [
+      "//brave/components/speedreader/rust/ffi:speedreader_ffi"
     ]
   }
 }
@@ -566,6 +585,7 @@ test("brave_browser_tests") {
   testonly = true
   sources = [
     "//brave/app/brave_main_delegate_browsertest.cc",
+    "//brave/app/brave_main_delegate_runtime_flags_browsertest.cc",
     "//brave/browser/autocomplete/brave_autocomplete_provider_client_browsertest.cc",
     "//brave/browser/brave_scheme_load_browsertest.cc",
     "//brave/browser/autoplay/autoplay_permission_context_browsertest.cc",
@@ -586,6 +606,7 @@ test("brave_browser_tests") {
     "//brave/browser/extensions/brave_extension_functional_test.h",
     "//brave/browser/extensions/brave_extension_provider_browsertest.cc",
     "//brave/browser/extensions/brave_theme_event_router_browsertest.cc",
+    "//brave/browser/farbling/brave_webaudio_farbling_browsertest.cc",
     "//brave/browser/net/brave_network_delegate_browsertest.cc",
     "//brave/browser/net/brave_network_delegate_hsts_fingerprinting_browsertest.cc",
     "//brave/browser/net/brave_system_request_handler_browsertest.cc",
@@ -626,6 +647,8 @@ test("brave_browser_tests") {
     "//brave/components/brave_shields/browser/https_everywhere_service_browsertest.cc",
     "//brave/components/brave_shields/browser/referrer_whitelist_service_browsertest.cc",
     "//brave/components/brave_shields/browser/tracking_protection_service_browsertest.cc",
+    "//brave/components/l10n/browser/locale_helper_mock.cc",
+    "//brave/components/l10n/browser/locale_helper_mock.h",
     "//brave/renderer/brave_content_settings_agent_impl_autoplay_browsertest.cc",
     "//brave/renderer/brave_content_settings_agent_impl_browsertest.cc",
     "//brave/renderer/brave_content_settings_agent_impl_flash_browsertest.cc",
@@ -695,8 +718,6 @@ test("brave_browser_tests") {
       "//brave/components/brave_rewards/browser/rewards_service_browsertest_utils.cc",
       "//brave/components/brave_rewards/browser/rewards_service_browsertest_utils.h",
       "//brave/components/brave_ads/browser/ads_service_browsertest.cc",
-      "//brave/components/brave_ads/browser/locale_helper_mock.cc",
-      "//brave/components/brave_ads/browser/locale_helper_mock.h",
       "//brave/components/brave_ads/browser/notification_helper_mock.cc",
       "//brave/components/brave_ads/browser/notification_helper_mock.h",
     ]
@@ -781,3 +802,52 @@ test("brave_browser_tests") {
   }
 }
 } # if (!is_android) {
+
+# All in this section is for running instrumentation java tests
+if (is_android) {
+  brave_public_test_manifest_package = "com.brave.browser.tests"
+
+  brave_public_test_apk_manifest =
+      "$root_gen_dir/brave_public_test_apk_manifest/AndroidManifest.xml"
+
+  jinja_template("brave_public_test_apk_manifest") {
+    input = "//chrome/android/javatests/AndroidManifest.xml"
+    includes = [ "//chrome/android/java/AndroidManifest.xml" ]
+    output = brave_public_test_apk_manifest
+    variables = default_chrome_public_jinja_variables
+    variables += [
+      "manifest_package=$brave_public_test_manifest_package",
+      "min_sdk_version=19",
+      "target_sdk_version=$android_sdk_version",
+    ]
+  }
+
+  chrome_public_common_apk_or_module_tmpl("brave_public_test_apk") {
+    testonly = true
+    target_type = "instrumentation_test_apk"
+    apk_name = "BravePublicTest"
+    android_manifest = brave_public_test_apk_manifest
+    android_manifest_dep = ":brave_public_test_apk_manifest"
+    shared_libraries = [ "//chrome/android:libchromefortest" ]
+    if (!is_java_debug) {
+      proguard_enabled = true
+      proguard_configs = [ "//brave/android/java/apk_for_test.flags" ]
+    }
+
+    sources = [
+      "//brave/android/javatests/org/chromium/chrome/browser/BravePrivateTabTest.java",
+      "//brave/android/javatests/org/chromium/chrome/browser/BytecodeTest.java",
+    ]
+
+    deps = [
+      "//base:base_java",
+      "//base:base_java_test_support",
+      "//chrome/android:chrome_apk_pak_assets",
+      "//chrome/android:chrome_public_base_module_java_for_test",
+      "//chrome/test/android:chrome_java_test_support",
+      "//components/search_engines/android:java",
+      "//components/sync/android:sync_java",
+      "//third_party/junit",
+    ]
+  }
+} # if (is_android) {

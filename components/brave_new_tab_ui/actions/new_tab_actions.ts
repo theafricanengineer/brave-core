@@ -82,8 +82,12 @@ export const onPromotionFinish = (result: NewTab.RewardsResult, promotion: NewTa
   promotion
 })
 
-export const setCurrentStackWidget = (widgetId: NewTab.StackWidget) => action(types.SET_CURRENT_STACK_WIDGET, {
-  widgetId
+export const removeStackWidget = (widget: NewTab.StackWidget) => action(types.REMOVE_STACK_WIDGET, {
+  widget
+})
+
+export const setForegroundStackWidget = (widget: NewTab.StackWidget) => action(types.SET_FOREGROUND_STACK_WIDGET, {
+  widget
 })
 
 export const onBinanceUserTLD = (userTLD: NewTab.BinanceTLD) => action(types.ON_BINANCE_USER_TLD, {
@@ -126,37 +130,14 @@ export const connectToBinance = () => action(types.CONNECT_TO_BINANCE)
 
 export const disconnectBinance = () => action(types.DISCONNECT_BINANCE)
 
-export const onBinanceAccountBalances = (balances: Record<string, string>) => action(types.ON_BINANCE_ACCOUNT_BALANCES, {
-  balances
+export const onAssetsBalanceInfo = (info: Record<string, Record<string, string>>) => action(types.ON_ASSETS_BALANCE_INFO, {
+  info
 })
 
-export const onBTCUSDPrice = (price: string) => action(types.ON_BTC_USD_PRICE, {
-  price
-})
-
-export const onBTCUSDVolume = (volume: string) => action(types.ON_BTC_USD_VOLUME, {
-  volume
-})
-
-export const onAssetBTCPrice = (ticker: string, price: string) => action(types.ON_ASSET_BTC_PRICE, {
-  ticker,
-  price
-})
-
-export const onAssetBTCVolume = (ticker: string, volume: string) => action(types.ON_ASSET_BTC_VOLUME, {
-  ticker,
-  volume
-})
-
-export const onAssetUSDPrice = (ticker: string, price: string) => action(types.ON_ASSET_USD_PRICE, {
-  ticker,
-  price
-})
-
-export const onAssetDepositInfo = (symbol: string, address: string, url: string) => action(types.ON_ASSET_DEPOSIT_INFO, {
+export const onAssetDepositInfo = (symbol: string, address: string, tag: string) => action(types.ON_ASSET_DEPOSIT_INFO, {
   symbol,
   address,
-  url
+  tag
 })
 
 export const onDepositQRForAsset = (asset: string, imageSrc: string) => action(types.ON_DEPOSIT_QR_FOR_ASSET, {

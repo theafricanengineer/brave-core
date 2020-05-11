@@ -8,9 +8,10 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "brave/components/brave_rewards/browser/rewards_service.h"
-#include "brave/components/brave_rewards/browser/rewards_service_factory.h"
+#include "brave/browser/brave_rewards/rewards_service_factory.h"
 #include "brave/components/brave_rewards/common/pref_names.h"
 #include "brave/components/brave_rewards/resources/grit/brave_rewards_internals_generated_map.h"
 #include "chrome/browser/profiles/profile.h"
@@ -45,6 +46,12 @@ class RewardsInternalsDOMHandler : public content::WebUIMessageHandler {
   void OnGetRewardsInternalsInfo(
       std::unique_ptr<brave_rewards::RewardsInternalsInfo> info);
   void OnPreferenceChanged();
+  void GetBalance(const base::ListValue* args);
+  void OnGetBalance(
+    int32_t result,
+    std::unique_ptr<brave_rewards::Balance> balance);
+  void GetPromotions(const base::ListValue* args);
+  void OnGetPromotions(const std::vector<brave_rewards::Promotion>& list);
 
   brave_rewards::RewardsService* rewards_service_;  // NOT OWNED
   Profile* profile_;
@@ -68,6 +75,16 @@ void RewardsInternalsDOMHandler::RegisterMessages() {
       "brave_rewards_internals.getRewardsInternalsInfo",
       base::BindRepeating(
           &RewardsInternalsDOMHandler::HandleGetRewardsInternalsInfo,
+          base::Unretained(this)));
+  web_ui()->RegisterMessageCallback(
+      "brave_rewards_internals.getBalance",
+      base::BindRepeating(
+          &RewardsInternalsDOMHandler::GetBalance,
+          base::Unretained(this)));
+  web_ui()->RegisterMessageCallback(
+      "brave_rewards_internals.getPromotions",
+      base::BindRepeating(
+          &RewardsInternalsDOMHandler::GetPromotions,
           base::Unretained(this)));
 }
 
@@ -138,6 +155,75 @@ void RewardsInternalsDOMHandler::OnGetRewardsInternalsInfo(
   }
   web_ui()->CallJavascriptFunctionUnsafe(
       "brave_rewards_internals.onGetRewardsInternalsInfo", info_dict);
+}
+
+void RewardsInternalsDOMHandler::GetBalance(const base::ListValue* args) {
+  if (!rewards_service_) {
+    return;
+  }
+  rewards_service_->FetchBalance(base::BindOnce(
+      &RewardsInternalsDOMHandler::OnGetBalance,
+      weak_ptr_factory_.GetWeakPtr()));
+}
+
+void RewardsInternalsDOMHandler::OnGetBalance(
+    int32_t result,
+    std::unique_ptr<brave_rewards::Balance> balance) {
+  if (!web_ui()->CanCallJavascript()) {
+    return;
+  }
+
+  base::Value balance_value(base::Value::Type::DICTIONARY);
+
+  if (result == 0 && balance) {
+    balance_value.SetDoubleKey("total", balance->total);
+
+    base::Value wallets(base::Value::Type::DICTIONARY);
+    for (auto const& wallet : balance->wallets) {
+      wallets.SetDoubleKey(wallet.first, wallet.second);
+    }
+    balance_value.SetKey("wallets", std::move(wallets));
+  }
+
+  web_ui()->CallJavascriptFunctionUnsafe(
+      "brave_rewards_internals.balance",
+      std::move(balance_value));
+}
+
+void RewardsInternalsDOMHandler::GetPromotions(const base::ListValue *args) {
+  if (!rewards_service_) {
+    return;
+  }
+
+  rewards_service_->GetAllPromotions(base::BindOnce(
+      &RewardsInternalsDOMHandler::OnGetPromotions,
+      weak_ptr_factory_.GetWeakPtr()));
+}
+
+void RewardsInternalsDOMHandler::OnGetPromotions(
+    const std::vector<brave_rewards::Promotion>& list) {
+  if (!web_ui()->CanCallJavascript()) {
+    return;
+  }
+
+  base::ListValue promotions;
+  for (const auto & item : list) {
+    auto dict = std::make_unique<base::DictionaryValue>();
+    dict->SetDouble("amount", item.amount);
+    dict->SetString("promotionId", item.promotion_id);
+    dict->SetInteger("expiresAt", item.expires_at);
+    dict->SetInteger("type", item.type);
+    dict->SetInteger("status", item.status);
+    dict->SetInteger("claimedAt", item.claimed_at);
+    dict->SetBoolean("legacyClaimed", item.legacy_claimed);
+    dict->SetString("claimId", item.claim_id);
+    dict->SetInteger("version", item.version);
+    promotions.Append(std::move(dict));
+  }
+
+  web_ui()->CallJavascriptFunctionUnsafe(
+      "brave_rewards_internals.promotions",
+      std::move(promotions));
 }
 
 }  // namespace

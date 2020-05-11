@@ -62,6 +62,7 @@ source_set("bat-native-confirmations") {
     "src/bat/confirmations/internal/confirmation_info.h",
     "src/bat/confirmations/internal/confirmations_impl.cc",
     "src/bat/confirmations/internal/confirmations_impl.h",
+    "src/bat/confirmations/internal/country_codes.h",
     "src/bat/confirmations/internal/create_confirmation_request.cc",
     "src/bat/confirmations/internal/create_confirmation_request.h",
     "src/bat/confirmations/internal/fetch_payment_token_request.cc",
@@ -75,12 +76,13 @@ source_set("bat-native-confirmations") {
     "src/bat/confirmations/internal/grant_rewards_serve_helper.cc",
     "src/bat/confirmations/internal/grant_rewards_serve_helper.h",
     "src/bat/confirmations/internal/logging.h",
-    "src/bat/confirmations/internal/platform_info.h",
     "src/bat/confirmations/internal/payment_info.h",
     "src/bat/confirmations/internal/payments.cc",
     "src/bat/confirmations/internal/payments.h",
     "src/bat/confirmations/internal/payout_tokens.cc",
     "src/bat/confirmations/internal/payout_tokens.h",
+    "src/bat/confirmations/internal/platform_helper.cc",
+    "src/bat/confirmations/internal/platform_helper.h",
     "src/bat/confirmations/internal/redeem_payment_tokens_request.cc",
     "src/bat/confirmations/internal/redeem_payment_tokens_request.h",
     "src/bat/confirmations/internal/redeem_token.cc",
@@ -93,10 +95,11 @@ source_set("bat-native-confirmations") {
     "src/bat/confirmations/internal/retry_timer.h",
     "src/bat/confirmations/internal/security_helper.cc",
     "src/bat/confirmations/internal/security_helper.h",
+    "src/bat/confirmations/internal/static_values.h",
     "src/bat/confirmations/internal/string_helper.cc",
     "src/bat/confirmations/internal/string_helper.h",
-    "src/bat/confirmations/internal/time.cc",
-    "src/bat/confirmations/internal/time.h",
+    "src/bat/confirmations/internal/time_util.cc",
+    "src/bat/confirmations/internal/time_util.h",
     "src/bat/confirmations/internal/timer.cc",
     "src/bat/confirmations/internal/timer.h",
     "src/bat/confirmations/internal/token_info.cc",
@@ -107,31 +110,36 @@ source_set("bat-native-confirmations") {
 
   if (is_android) {
     sources += [
-      "src/bat/confirmations/internal/platform_info_android.cc",
+      "src/bat/confirmations/internal/platform_helper_android.cc",
+      "src/bat/confirmations/internal/platform_helper_android.h",
     ]
   }
 
   if (is_linux) {
     sources += [
-      "src/bat/confirmations/internal/platform_info_linux.cc",
+      "src/bat/confirmations/internal/platform_helper_linux.cc",
+      "src/bat/confirmations/internal/platform_helper_linux.h",
     ]
   }
 
   if (is_mac) {
     sources += [
-      "src/bat/confirmations/internal/platform_info_mac.mm",
+      "src/bat/confirmations/internal/platform_helper_mac.mm",
+      "src/bat/confirmations/internal/platform_helper_mac.h",
     ]
   }
 
   if (is_ios) {
     sources += [
-      "src/bat/confirmations/internal/platform_info_ios.mm",
+      "src/bat/confirmations/internal/platform_helper_ios.mm",
+      "src/bat/confirmations/internal/platform_helper_ios.h",
     ]
   }
 
   if (is_win) {
     sources += [
-      "src/bat/confirmations/internal/platform_info_win.cc",
+      "src/bat/confirmations/internal/platform_helper_win.cc",
+      "src/bat/confirmations/internal/platform_helper_win.h",
     ]
   }
 

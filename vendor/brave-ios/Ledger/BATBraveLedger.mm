@@ -4,6 +4,7 @@
 
 #import <UIKit/UIKit.h>
 #import "bat/ledger/ledger.h"
+#import "bat/ledger/global_constants.h"
 #import "bat/ledger/option_keys.h"
 
 #import "Records+Private.h"
@@ -787,6 +788,21 @@ BATLedgerReadonlyBridge(double, defaultContributionAmount, GetDefaultContributio
   });
 }
 
+#pragma mark - SKUs
+
+- (void)processSKUItems:(NSArray<BATSKUOrderItem *> *)items
+             completion:(void (^)(BATResult result, NSString *orderID))completion
+{
+  auto wallet = ledger::ExternalWallet::New();
+  wallet->type = ledger::kWalletUnBlinded;
+  
+  ledger->ProcessSKU(VectorFromNSArray(items, ^ledger::SKUOrderItem(BATSKUOrderItem *item) {
+    return *item.cppObjPtr;
+  }), std::move(wallet), ^(const ledger::Result result, const std::string& order_id) {
+    completion(static_cast<BATResult>(result), [NSString stringWithUTF8String:order_id.c_str()]);
+  });
+}
+
 #pragma mark - Tips
 
 - (void)listRecurringTips:(void (^)(NSArray<BATPublisherInfo *> *))completion
@@ -1277,6 +1293,10 @@ BATLedgerBridge(BOOL,
 - (bool)getBooleanState:(const std::string&)name
 {
   const auto key = [NSString stringWithUTF8String:name.c_str()];
+  if (![self.prefs objectForKey:key]) {
+    return NO;
+  }
+
   return [self.prefs[key] boolValue];
 }
 
@@ -1791,6 +1811,16 @@ BATLedgerBridge(BOOL,
 }
 
 #pragma mark - Network
+
+- (NSString *)customUserAgent
+{
+  return self.commonOps.customUserAgent;
+}
+
+- (void)setCustomUserAgent:(NSString *)customUserAgent
+{
+  self.commonOps.customUserAgent = [customUserAgent stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+}
 
 - (void)loadURL:(const std::string &)url headers:(const std::vector<std::string> &)headers content:(const std::string &)content contentType:(const std::string &)contentType method:(const ledger::UrlMethod)method callback:(ledger::LoadURLCallback)callback
 {

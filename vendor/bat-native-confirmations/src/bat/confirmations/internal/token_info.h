@@ -11,15 +11,20 @@
 
 #include "wrapper.hpp"  // NOLINT
 
-using challenge_bypass_ristretto::UnblindedToken;
-
 namespace confirmations {
+
+using challenge_bypass_ristretto::UnblindedToken;
 
 struct TokenInfo {
   TokenInfo();
   TokenInfo(
       const TokenInfo& info);
   ~TokenInfo();
+
+  bool operator==(
+      const TokenInfo info) const;
+  bool operator!=(
+      const TokenInfo info) const;
 
   UnblindedToken unblinded_token;
   std::string public_key;

@@ -6,6 +6,7 @@
 #ifndef BRAVELEDGER_COMMON_REQUEST_UTIL_H_
 #define BRAVELEDGER_COMMON_REQUEST_UTIL_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -14,9 +15,9 @@ namespace braveledger_request_util {
 enum class ServerTypes {
   LEDGER,
   BALANCE,
-  PUBLISHER,
-  PUBLISHER_DISTRO,
-  kPromotion
+  kPublisher,
+  kPromotion,
+  kPayments
 };
 
 std::string BuildUrl(
@@ -24,10 +25,17 @@ std::string BuildUrl(
     const std::string& prefix = "",
     const ServerTypes& server = ServerTypes::LEDGER);
 
+std::map<std::string, std::string> GetSignHeaders(
+    const std::string& url,
+    const std::string& body,
+    const std::string& key_id,
+    const std::vector<uint8_t>& private_key,
+    const bool idempotency_key = false);
+
 std::vector<std::string> BuildSignHeaders(
     const std::string& url,
     const std::string& body,
-    const std::string& payment_id,
+    const std::string& key_id,
     const std::vector<uint8_t>& private_key);
 
 }  // namespace braveledger_request_util

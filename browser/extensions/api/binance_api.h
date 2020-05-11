@@ -66,7 +66,8 @@ class BinanceGetAccountBalancesFunction :
 
  protected:
   ~BinanceGetAccountBalancesFunction() override {}
-  void OnGetAccountBalances(const std::map<std::string, std::string>& balances,
+  void OnGetAccountBalances(const std::map<std::string,
+                                  std::vector<std::string>>& balances,
                             bool success);
 
   ResponseAction Run() override;
@@ -87,30 +88,6 @@ class BinanceGetConvertQuoteFunction :
   ResponseAction Run() override;
 };
 
-class BinanceGetTickerPriceFunction :
-    public ExtensionFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("binance.getTickerPrice", UNKNOWN)
-
- protected:
-  ~BinanceGetTickerPriceFunction() override {}
-  void OnGetTickerPrice(const std::string& symbol_pair_price);
-
-  ResponseAction Run() override;
-};
-
-class BinanceGetTickerVolumeFunction :
-    public ExtensionFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("binance.getTickerVolume", UNKNOWN)
-
- protected:
-  ~BinanceGetTickerVolumeFunction() override {}
-  void OnGetTickerVolume(const std::string& symbol_pair_volume);
-
-  ResponseAction Run() override;
-};
-
 class BinanceGetDepositInfoFunction :
     public ExtensionFunction {
  public:
@@ -119,7 +96,7 @@ class BinanceGetDepositInfoFunction :
  protected:
   ~BinanceGetDepositInfoFunction() override {}
   void OnGetDepositInfo(const std::string& deposit_address,
-                        const std::string& deposit_url,
+                        const std::string& deposit_tag,
                         bool success);
 
   ResponseAction Run() override;
@@ -158,6 +135,19 @@ class BinanceRevokeTokenFunction :
  protected:
   ~BinanceRevokeTokenFunction() override {}
   void OnRevokeToken(bool success);
+
+  ResponseAction Run() override;
+};
+
+class BinanceGetCoinNetworksFunction :
+    public ExtensionFunction {
+ public:
+  DECLARE_EXTENSION_FUNCTION("binance.getCoinNetworks", UNKNOWN)
+
+ protected:
+  ~BinanceGetCoinNetworksFunction() override {}
+  void OnGetCoinNetworks(
+      const std::map<std::string, std::string>& networks);
 
   ResponseAction Run() override;
 };

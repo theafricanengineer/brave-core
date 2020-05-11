@@ -17,9 +17,10 @@
 #include "base/task/post_task.h"
 #include "brave/common/brave_switches.h"
 #include "brave/common/pref_names.h"
-#include "brave/components/brave_ads/browser/locale_helper.h"
+#include "brave/components/brave_component_updater/browser/brave_on_demand_updater.h"
 #include "brave/components/brave_referrals/browser/brave_referrals_service.h"
 #include "brave/components/brave_referrals/buildflags/buildflags.h"
+#include "brave/components/l10n/browser/locale_helper.h"
 #include "brave/components/ntp_background_images/browser/features.h"
 #include "brave/components/ntp_background_images/browser/ntp_background_images_component_installer.h"
 #include "brave/components/ntp_background_images/browser/ntp_background_images_data.h"
@@ -32,10 +33,13 @@
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 
+using brave_component_updater::BraveOnDemandUpdater;
+
 namespace ntp_background_images {
 
 namespace {
 
+constexpr int kSIComponentUpdateCheckIntervalHours = 1;
 constexpr char kNTPManifestFile[] = "photo.json";
 constexpr char kNTPSRMappingTableFile[] = "mapping-table.json";
 
@@ -169,11 +173,17 @@ void NTPBackgroundImagesService::Init() {
 #endif
 }
 
+void NTPBackgroundImagesService::CheckSIComponentUpdate(
+    const std::string& component_id) {
+  DVLOG(2) << __func__ << ": Check NTP SI component update";
+  BraveOnDemandUpdater::GetInstance()->OnDemandUpdate(component_id);
+}
+
 void NTPBackgroundImagesService::RegisterSponsoredImagesComponent() {
   const std::string locale =
-      brave_ads::LocaleHelper::GetInstance()->GetLocale();
+      brave_l10n::LocaleHelper::GetInstance()->GetLocale();
   const auto& data = GetSponsoredImagesComponentData(
-      brave_ads::LocaleHelper::GetCountryCode(locale));
+      brave_l10n::LocaleHelper::GetCountryCode(locale));
   if (!data) {
     DVLOG(2) << __func__ << ": Not support NTP SI component for " << locale;
     return;
@@ -188,6 +198,15 @@ void NTPBackgroundImagesService::RegisterSponsoredImagesComponent() {
       base::BindRepeating(&NTPBackgroundImagesService::OnComponentReady,
                           weak_factory_.GetWeakPtr(),
                           false));
+  // SI component checks update more frequently than other components.
+  // By default, browser check update status every 5 hours.
+  // However, this background interval is too long for SI. Use 1 hour interval.
+  si_update_check_timer_.Start(
+      FROM_HERE,
+      base::TimeDelta::FromHours(kSIComponentUpdateCheckIntervalHours),
+      base::BindRepeating(&NTPBackgroundImagesService::CheckSIComponentUpdate,
+                          base::Unretained(this),
+                          data->component_id));
 }
 
 void NTPBackgroundImagesService::CheckSuperReferralComponent() {

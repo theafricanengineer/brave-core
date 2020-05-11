@@ -10,7 +10,7 @@
 #include "brave/components/brave_ads/browser/ads_service_factory.h"
 #include "brave/components/brave_ads/browser/test_util.h"
 #include "brave/components/brave_rewards/browser/rewards_service.h"
-#include "brave/components/brave_rewards/browser/rewards_service_factory.h"
+#include "brave/browser/brave_rewards/rewards_service_factory.h"
 #include "brave/components/brave_rewards/browser/rewards_service_private_observer.h"
 #include "brave/components/brave_rewards/common/pref_names.h"
 #include "chrome/browser/profiles/profile.h"
@@ -209,6 +209,9 @@ class MockRewardsService : public RewardsService {
 
   MOCK_METHOD1(GetAllMonthlyReportIds, void(
       brave_rewards::GetAllMonthlyReportIdsCallback callback));
+
+  MOCK_METHOD1(GetAllPromotions, void(
+      brave_rewards::GetAllPromotionsCallback callback));
 };
 
 class AdsServiceTest : public testing::Test {

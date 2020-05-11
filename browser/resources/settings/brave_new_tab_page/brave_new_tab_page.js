@@ -15,29 +15,34 @@
     /** @private {?settings.BraveNewTabBrowserProxy} */
     browserProxy_: null,
 
+    behaviors: [
+      WebUIListenerBehavior,
+    ],
+
+    properties: {
+      isSuperReferralActive_: Boolean,
+      isBinanceSupported_: Boolean,
+    },
+
     /** @override */
     created: function() {
       this.browserProxy_ = settings.BraveNewTabBrowserProxyImpl.getInstance();
+      this.isSuperReferralActive_ = false;
+      this.isBinanceSupported_ = false;
     },
 
-    shouldShowBackgroundImageOptions_: function() {
-      // Only show background image options if user doesn't use SR theme.
-      // With SR theme, user can't off bg images.
-      return !loadTimeData.getBoolean('isSuperReferralActive');
-    },
+    /** @override */
+    ready: function() {
+      this.browserProxy_.getIsSuperReferralActive().then(isSuperReferralActive => {
+        this.isSuperReferralActive_ = isSuperReferralActive;
+      })
+      this.browserProxy_.getIsBinanceSupported().then(isBinanceSupported => {
+        this.isBinanceSupported_ = isBinanceSupported;
+      })
 
-    toggleBrandedBackgroundOption_: function(isBackgroundEnabled, isBrandedBackgroundEnabled) {
-      // If background image setting is not turned ON,
-      // inform the back-end to also disable the branded wallpaper setting.
-      // We will later disable interacting with the button as well.
-      if (isBackgroundEnabled === false) {
-        return {
-          key: 'brave.new_tab_page.show_branded_background_image',
-          type: 'BOOLEAN',
-          value: false
-        };
-      }
-      return isBrandedBackgroundEnabled;
+      this.addWebUIListener('super-referral-active-state-changed', (isSuperReferralActive) => {
+        this.isSuperReferralActive_ = isSuperReferralActive;
+      })
     },
   });
 })();

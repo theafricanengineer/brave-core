@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef BAT_ADS_INTERNAL_KEYWORDS_H_
-#define BAT_ADS_INTERNAL_KEYWORDS_H_
+#ifndef BAT_ADS_INTERNAL_PURCHASE_INTENT_KEYWORDS_H_
+#define BAT_ADS_INTERNAL_PURCHASE_INTENT_KEYWORDS_H_
 
 #include <stdint.h>
 #include <string>
@@ -1760,6 +1760,111 @@ SegmentKeywordInfo({
     "automotive purchase intent by make-volvo",
     "automotive purchase intent by category-luxury suv"},
     "Volvo XC90"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-acura"},
+    "Acura"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-audi"},
+    "Audi"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-bmw"},
+    "BMW"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-buick"},
+    "Buick"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-cadillac"},
+    "Cadillac"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-chevrolet"},
+    "Chevrolet"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-chrysler"},
+    "Chrysler"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-dodge"},
+    "Dodge"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-fiat"},
+    "Fiat"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-ford"},
+    "Ford"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-gmc"},
+    "GMC"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-honda"},
+    "Honda"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-hyundai"},
+    "Hyundai"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-infiniti"},
+    "Infiniti"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-jaguar"},
+    "Jaguar"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-jeep"},
+    "Jeep"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-kia"},
+    "Kia"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-land rover"},
+    "Land Rover"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-lexus"},
+    "Lexus"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-lincoln"},
+    "Lincoln"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-mazda"},
+    "Mazda"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-mercedes-benz"},
+    "Mercedes-Benz"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-mini"},
+    "Mini"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-mitsubishi"},
+    "Mitsubishi"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-nissan"},
+    "Nissan"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-porsche"},
+    "Porsche"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-ram"},
+    "RAM"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-saab"},
+    "Saab"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-scion"},
+    "Scion"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-smart"},
+    "smart"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-subaru"},
+    "Subaru"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-suzuki"},
+    "Suzuki"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-toyota"},
+    "Toyota"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-volkswagen"},
+    "Volkswagen"),
+SegmentKeywordInfo({
+    "automotive purchase intent by make-volvo"},
+    "Volvo"),
 };
 
 static const std::vector<FunnelKeywordInfo>& _automotive_funnel_keywords = {
@@ -1818,4 +1923,4 @@ class Keywords {
 
 }  // namespace ads
 
-#endif  // BAT_ADS_INTERNAL_KEYWORDS_H_
+#endif  // BAT_ADS_INTERNAL_PURCHASE_INTENT_KEYWORDS_H_

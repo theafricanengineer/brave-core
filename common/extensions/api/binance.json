@@ -69,10 +69,6 @@
         "description": "Facilitates access token creation given a temporary code",
         "parameters": [
           {
-            "type": "string",
-            "name": "code"
-          },
-          {
             "type": "function",
             "name": "callback",
             "parameters": [
@@ -96,8 +92,7 @@
             "parameters": [
               {
                 "name": "balances",
-                "type": "object",
-                "additionalProperties": { "type": "string" }
+                "type": "any"
               }, {
                 "name": "success",
                 "type": "boolean",
@@ -155,46 +150,6 @@
         ]
       },
       {
-        "name": "getTickerPrice",
-        "type": "function",
-        "description": "Fetches latest symbol pair trading value",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "symbolPair"
-          }, {
-            "type": "function",
-            "name": "callback",
-            "parameters": [
-              {
-                "name": "symbolPairValue",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "getTickerVolume",
-        "type": "function",
-        "description": "Fetches latest symbol pair trading volume",
-        "parameters": [
-          {
-            "type": "string",
-            "name": "symbolPair"
-          }, {
-            "type": "function",
-            "name": "callback",
-            "parameters": [
-              {
-                "name": "symbolPairVolume",
-                "type": "string"
-              }
-            ]
-          }
-        ]
-      },
-      {
         "name": "getDepositInfo",
         "type": "function",
         "description": "Fetches user address/url given an asset",
@@ -202,6 +157,10 @@
           {
             "type": "string",
             "name": "symbol"
+          },
+          {
+            "type": "string",
+            "name": "tickerNetwork"
           }, {
             "type": "function",
             "name": "callback",
@@ -211,7 +170,7 @@
                 "type": "string"
               },
               {
-                "name": "depositURL",
+                "name": "depositTag",
                 "type": "string"
               }
             ]
@@ -272,6 +231,24 @@
               {
                 "name": "success",
                 "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "getCoinNetworks",
+        "type": "function",
+        "description": "Retrieves the primary networks for Binance assets",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "networks",
+                "type": "object",
+                "additionalProperties": { "type": "string" }
               }
             ]
           }

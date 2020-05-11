@@ -6,7 +6,7 @@
 #include "bat/ads/internal/frequency_capping/frequency_capping.h"
 #include "bat/ads/creative_ad_notification_info.h"
 #include "bat/ads/internal/client.h"
-#include "bat/ads/internal/time.h"
+#include "bat/ads/internal/time_util.h"
 
 namespace ads {
 
@@ -23,7 +23,7 @@ bool FrequencyCapping::DoesHistoryRespectCapForRollingTimeConstraint(
     const uint64_t cap) const {
   uint64_t count = 0;
 
-  auto now_in_seconds = Time::NowInSeconds();
+  auto now_in_seconds = base::Time::Now().ToDoubleT();
 
   for (const auto& timestamp_in_seconds : history) {
     if (now_in_seconds - timestamp_in_seconds < time_constraint_in_seconds) {
@@ -90,6 +90,19 @@ std::deque<uint64_t> FrequencyCapping::GetCampaign(
   auto campaign_history = client_->GetCampaignHistory();
   if (campaign_history.find(campaign_id) != campaign_history.end()) {
     history = campaign_history.at(campaign_id);
+  }
+
+  return history;
+}
+
+std::deque<uint64_t> FrequencyCapping::GetAdConversionHistory(
+    const std::string& creative_set_id) const {
+  std::deque<uint64_t> history;
+
+  auto creative_set_history = client_->GetAdConversionHistory();
+  if (creative_set_history.find(creative_set_id)
+      != creative_set_history.end()) {
+    history = creative_set_history.at(creative_set_id);
   }
 
   return history;

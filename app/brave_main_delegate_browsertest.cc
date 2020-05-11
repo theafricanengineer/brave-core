@@ -6,6 +6,7 @@
 #include "chrome/browser/domain_reliability/service_factory.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
+#include "chrome/browser/ui/ui_features.h"
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/test/base/in_process_browser_test.h"
@@ -45,11 +46,11 @@ IN_PROC_BROWSER_TEST_F(BraveMainDelegateBrowserTest, DisabledFeatures) {
       &autofill::features::kAutofillServerCommunication,
       &blink::features::kTextFragmentAnchor,
       &features::kAllowPopupsDuringPageUnload,
-      &features::kAudioServiceOutOfProcess,
       &features::kNotificationTriggers,
       &features::kSmsReceiver,
       &features::kVideoPlaybackQuality,
       &features::kLookalikeUrlNavigationSuggestionsUI,
+      &features::kTabHoverCards,
   };
 
   for (const auto* feature : disabled_features)

@@ -7,6 +7,10 @@ import { debounce } from '../../../common/debounce'
 const keyName = 'rewards-internals-data'
 
 const defaultState: RewardsInternals.State = {
+  balance: {
+    total: 0.0,
+    wallets: {}
+  },
   isRewardsEnabled: false,
   info: {
     isKeyInfoSeedValid: false,
@@ -15,7 +19,8 @@ const defaultState: RewardsInternals.State = {
     personaId: '',
     userId: '',
     bootStamp: 0
-  }
+  },
+  promotions: []
 }
 
 const cleanData = (state: RewardsInternals.State) => state

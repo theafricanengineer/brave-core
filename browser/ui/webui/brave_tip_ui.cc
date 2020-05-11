@@ -19,7 +19,7 @@
 #include "brave/common/webui_url_constants.h"
 #include "brave/components/brave_rewards/browser/publisher_banner.h"
 #include "brave/components/brave_rewards/browser/rewards_service.h"
-#include "brave/components/brave_rewards/browser/rewards_service_factory.h"
+#include "brave/browser/brave_rewards/rewards_service_factory.h"
 #include "brave/components/brave_rewards/browser/rewards_service_observer.h"
 #include "brave/components/brave_rewards/resources/grit/brave_rewards_resources.h"
 #include "brave/components/brave_rewards/resources/grit/brave_rewards_tip_generated_map.h"
@@ -95,7 +95,7 @@ class RewardsTipDOMHandler : public WebUIMessageHandler,
   void OnReconcileComplete(
       brave_rewards::RewardsService* rewards_service,
       unsigned int result,
-      const std::string& viewing_id,
+      const std::string& contribution_id,
       const double amount,
       const int32_t type) override;
 
@@ -499,7 +499,7 @@ void RewardsTipDOMHandler::OnlyAnonWallet(const base::ListValue* args) {
 void RewardsTipDOMHandler::OnReconcileComplete(
     brave_rewards::RewardsService* rewards_service,
     unsigned int result,
-    const std::string& viewing_id,
+    const std::string& contribution_id,
     const double amount,
     const int32_t type) {
   if (!web_ui()->CanCallJavascript()) {

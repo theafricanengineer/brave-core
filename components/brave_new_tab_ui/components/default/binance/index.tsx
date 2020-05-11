@@ -84,7 +84,6 @@ import { getLocale } from '../../../../common/locale'
 import searchIcon from './assets/search-icon.png'
 import partyIcon from './assets/party.png'
 import qrIcon from './assets/qr.png'
-import { getUSDPrice } from '../../../binance-utils'
 
 interface State {
   fiatShowing: boolean
@@ -145,7 +144,6 @@ interface Props {
   onSetInitialAsset: (initialAsset: string) => void
   onSetUserTLDAutoSet: () => void
   onSetHideBalance: (hide: boolean) => void
-  onBinanceAccountBalances: (balances: Record<string, string>) => void
   onBinanceClientUrl: (clientUrl: string) => void
   onDisconnectBinance: () => void
   onCancelDisconnect: () => void
@@ -154,12 +152,11 @@ interface Props {
   onUpdateActions: () => void
   onDismissAuthInvalid: () => void
   onSetSelectedView: (view: string) => void
+  getCurrencyList: () => string[]
 }
 
 class Binance extends React.PureComponent<Props, State> {
   private fiatList: string[]
-  private usCurrencies: string[]
-  private comCurrencies: string[]
   private currencyNames: Record<string, string>
   private cryptoColors: Record<string, string>
   private convertTimer: any
@@ -195,8 +192,6 @@ class Binance extends React.PureComponent<Props, State> {
     }
     this.cryptoColors = currencyData.cryptoColors
     this.fiatList = currencyData.fiatList
-    this.usCurrencies = currencyData.usCurrencies
-    this.comCurrencies = currencyData.comCurrencies
     this.currencyNames = {
       'BAT': 'Basic Attent...',
       'BTC': 'Bitcoin',
@@ -263,10 +258,10 @@ class Binance extends React.PureComponent<Props, State> {
   checkForOauthCode = () => {
     const params = window.location.search
     const urlParams = new URLSearchParams(params)
-    const authCode = urlParams.get('code')
+    const binanceAuth = urlParams.get('binanceAuth')
 
-    if (authCode) {
-      chrome.binance.getAccessToken(authCode, (success: boolean) => {
+    if (binanceAuth) {
+      chrome.binance.getAccessToken((success: boolean) => {
         if (success) {
           this.props.onValidAuthCode()
           this.props.onUpdateActions()
@@ -379,7 +374,6 @@ class Binance extends React.PureComponent<Props, State> {
     const { currentConvertId } = this.state
     chrome.binance.confirmConvert(currentConvertId, (success: boolean, message: string) => {
       if (success) {
-        this.props.onUpdateActions()
         this.setState({ convertSuccess: true })
       } else {
         this.setState({
@@ -584,22 +578,6 @@ class Binance extends React.PureComponent<Props, State> {
     }
   }
 
-  getCurrencyList = () => {
-    const { accountBalances, userTLD } = this.props
-    const baseList = userTLD === 'us' ? this.usCurrencies : this.comCurrencies
-
-    if (!accountBalances) {
-      return baseList
-    }
-
-    const accounts = Object.keys(accountBalances)
-    const nonHoldingList = baseList.filter((symbol: string) => {
-      return !accounts.includes(symbol)
-    })
-
-    return accounts.concat(nonHoldingList)
-  }
-
   renderIconAsset = (key: string, isDetail: boolean = false) => {
     const iconColor = this.cryptoColors[key] || '#fff'
 
@@ -756,11 +734,13 @@ class Binance extends React.PureComponent<Props, State> {
 
   renderCurrentDepositAsset = () => {
     const { currentDepositAsset } = this.state
-    const { assetDepositInfo } = this.props
+    const assetDepositInfo = this.props.assetDepositInfo || {}
     const addressInfo = assetDepositInfo[currentDepositAsset]
     const address = addressInfo && addressInfo.address
+    const tag = addressInfo && addressInfo.tag
     const cleanName = this.currencyNames[currentDepositAsset]
     const cleanNameDisplay = cleanName ? `(${cleanName})` : ''
+    const depositData = tag || address
 
     return (
       <>
@@ -780,7 +760,7 @@ class Binance extends React.PureComponent<Props, State> {
             {cleanNameDisplay}
           </AssetLabel>
           {
-            address
+            depositData
             ? <AssetQR onClick={this.setQR.bind(this, currentDepositAsset)}>
                 <img style={{ width: '25px', marginRight: '5px' }} src={qrIcon} />
               </AssetQR>
@@ -788,27 +768,54 @@ class Binance extends React.PureComponent<Props, State> {
           }
         </ListItem>
         <DetailArea>
-          <MemoArea>
-            <MemoInfo>
-              <DetailLabel>
-                {`${currentDepositAsset} ${getLocale('binanceWidgetDepositAddress')}`}
-              </DetailLabel>
-              <DetailInfo>
-                {
-                  address
-                  ? address
-                  : getLocale('binanceWidgetAddressUnavailable')
-                }
-              </DetailInfo>
-            </MemoInfo>
-            {
-              address
-              ? <CopyButton onClick={this.copyToClipboard.bind(this, address)}>
+          {
+            !depositData
+            ? <MemoArea>
+                <MemoInfo>
+                  <DetailLabel>
+                    {`${currentDepositAsset}`}
+                  </DetailLabel>
+                  <DetailInfo>
+                    {getLocale('binanceWidgetAddressUnavailable')}
+                  </DetailInfo>
+                </MemoInfo>
+              </MemoArea>
+            : null
+          }
+          {
+            address
+            ? <MemoArea>
+                <MemoInfo>
+                  <DetailLabel>
+                    {`${currentDepositAsset} ${getLocale('binanceWidgetDepositAddress')}`}
+                  </DetailLabel>
+                  <DetailInfo>
+                    {address}
+                  </DetailInfo>
+                </MemoInfo>
+                <CopyButton onClick={this.copyToClipboard.bind(this, address)}>
                   {getLocale('binanceWidgetCopy')}
                 </CopyButton>
-              : null
-            }
-          </MemoArea>
+              </MemoArea>
+            : null
+          }
+          {
+            tag
+            ? <MemoArea>
+                <MemoInfo>
+                  <DetailLabel>
+                    {`${currentDepositAsset} ${getLocale('binanceWidgetDepositMemo')}`}
+                  </DetailLabel>
+                  <DetailInfo>
+                    {tag}
+                  </DetailInfo>
+                </MemoInfo>
+                <CopyButton onClick={this.copyToClipboard.bind(this, tag)}>
+                  {getLocale('binanceWidgetCopy')}
+                </CopyButton>
+              </MemoArea>
+            : null
+          }
         </DetailArea>
       </>
     )
@@ -817,7 +824,7 @@ class Binance extends React.PureComponent<Props, State> {
   renderDepositView = () => {
     const { currencyNames } = this
     const { currentDepositSearch, currentDepositAsset } = this.state
-    const currencyList = this.getCurrencyList()
+    const currencyList = this.props.getCurrencyList()
 
     if (currentDepositAsset) {
       return this.renderCurrentDepositAsset()
@@ -872,9 +879,10 @@ class Binance extends React.PureComponent<Props, State> {
       hideBalance,
       accountBTCValue,
       accountBTCUSDValue,
-      assetUSDValues
+      assetUSDValues,
+      getCurrencyList
     } = this.props
-    const currencyList = this.getCurrencyList()
+    const currencyList = getCurrencyList()
     const totalBTCUSDValue = accountBTCUSDValue || '0.00'
     const totalBTCValue = accountBTCValue ? this.formatCryptoBalance(accountBTCValue) : '0.000000'
 
@@ -906,9 +914,8 @@ class Binance extends React.PureComponent<Props, State> {
         {currencyList.map((asset: string) => {
           // Initial migration display
           const assetAccountBalance = accountBalances ? accountBalances[asset] : '0.00'
-          const assetUSDValue = assetUSDValues ? assetUSDValues[asset] : '0.00'
+          const assetUSDValue = assetUSDValues ? (assetUSDValues[asset] || '0.00') : '0.00'
           const assetBalance = this.formatCryptoBalance(assetAccountBalance)
-          const price = getUSDPrice(assetBalance, assetUSDValue)
 
           return (
             <ListItem key={`list-${asset}`}>
@@ -925,7 +932,7 @@ class Binance extends React.PureComponent<Props, State> {
                   {assetBalance}
                 </Balance>
                 <Converted isBTC={false} hideBalance={hideBalance}>
-                  {`= $${price}`}
+                  {`= $${assetUSDValue}`}
                 </Converted>
               </ListInfo>
             </ListItem>
@@ -1163,15 +1170,16 @@ class Binance extends React.PureComponent<Props, State> {
       initialAsset,
       initialFiat,
       initialAmount,
-      userAuthed
+      userAuthed,
+      getCurrencyList
     } = this.props
     const {
       fiatShowing,
       currenciesShowing
     } = this.state
     const isUS = userTLD === 'us'
-    const currencies = this.getCurrencyList()
     const ButtonComponent = userAuthed ? ActionButton : ConnectButton
+    const currencies = getCurrencyList()
 
     return (
       <>

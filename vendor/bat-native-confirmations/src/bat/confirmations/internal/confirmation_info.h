@@ -15,16 +15,21 @@
 
 #include "wrapper.hpp"  // NOLINT
 
+namespace confirmations {
+
 using challenge_bypass_ristretto::Token;
 using challenge_bypass_ristretto::BlindedToken;
-
-namespace confirmations {
 
 struct ConfirmationInfo {
   ConfirmationInfo();
   ConfirmationInfo(
       const ConfirmationInfo& info);
   ~ConfirmationInfo();
+
+  bool operator==(
+      const ConfirmationInfo info) const;
+  bool operator!=(
+      const ConfirmationInfo info) const;
 
   std::string id;
   std::string creative_instance_id;

@@ -9,6 +9,7 @@
 #include "bat/confirmations/internal/confirmations_impl.h"
 #include "bat/confirmations/internal/unblinded_tokens.h"
 #include "bat/confirmations/internal/redeem_payment_tokens_request.h"
+#include "bat/confirmations/internal/time_util.h"
 
 #include "brave_base/random.h"
 #include "net/http/http_status_code.h"
@@ -33,21 +34,23 @@ PayoutTokens::~PayoutTokens() = default;
 
 void PayoutTokens::PayoutAfterDelay(
     const WalletInfo& wallet_info) {
-  DCHECK(!wallet_info.payment_id.empty());
-  DCHECK(!wallet_info.private_key.empty());
-
   if (retry_timer_.IsRunning()) {
     return;
   }
 
-  wallet_info_ = WalletInfo(wallet_info);
+  wallet_info_ = wallet_info;
+  if (!wallet_info_.IsValid()) {
+    BLOG(ERROR) << "Failed to payout tokens due to invalid wallet";
+    return;
+  }
 
   const uint64_t delay = CalculatePayoutDelay();
+
   const base::Time time = timer_.Start(delay,
       base::BindOnce(&PayoutTokens::RedeemPaymentTokens,
           base::Unretained(this)));
 
-  BLOG(INFO) << "Payout tokens at " << time;
+  BLOG(INFO) << "Payout tokens " << FriendlyDateAndTime(time);
 }
 
 uint64_t PayoutTokens::get_token_redemption_timestamp_in_seconds() const {
@@ -136,7 +139,7 @@ void PayoutTokens::OnPayout(const Result result) {
         kRetryPayoutTokensAfterSeconds, base::BindOnce(&PayoutTokens::OnRetry,
             base::Unretained(this)));
 
-    BLOG(INFO) << "Retry paying out tokens at " << time;
+    BLOG(INFO) << "Retry paying out tokens " << FriendlyDateAndTime(time);
 
     return;
   }
@@ -179,20 +182,23 @@ uint64_t PayoutTokens::CalculatePayoutDelay() {
     delay = token_redemption_timestamp_in_seconds_ - now_in_seconds;
   }
 
-  const uint64_t rand_delay = brave_base::random::Geometric(delay);
-  return rand_delay;
+  return delay;
 }
 
 void PayoutTokens::UpdateNextTokenRedemptionDate() {
-  uint64_t timestamp_in_seconds = base::Time::Now().ToDoubleT();
+  const uint64_t now_in_seconds = base::Time::Now().ToDoubleT();
+
+  uint64_t delay;
 
   if (!_is_debug) {
-    timestamp_in_seconds += kNextTokenRedemptionAfterSeconds;
+    delay = kNextTokenRedemptionAfterSeconds;
   } else {
-    timestamp_in_seconds += kDebugNextTokenRedemptionAfterSeconds;
+    delay = kDebugNextTokenRedemptionAfterSeconds;
   }
 
-  token_redemption_timestamp_in_seconds_ = timestamp_in_seconds;
+  const uint64_t rand_delay = brave_base::random::Geometric(delay);
+
+  token_redemption_timestamp_in_seconds_ = now_in_seconds + rand_delay;
   confirmations_->SaveState();
 }
 

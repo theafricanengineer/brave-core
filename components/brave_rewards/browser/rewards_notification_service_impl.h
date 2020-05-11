@@ -12,6 +12,7 @@
 
 #include "base/values.h"
 #include "brave/components/brave_rewards/browser/rewards_notification_service.h"
+#include "brave/components/brave_rewards/browser/rewards_notification_service_observer.h"
 #include "brave/components/brave_rewards/browser/rewards_service_observer.h"
 #include "extensions/buildflags/buildflags.h"
 
@@ -29,6 +30,8 @@ class RewardsNotificationServiceImpl
   explicit RewardsNotificationServiceImpl(Profile* profile);
   ~RewardsNotificationServiceImpl() override;
 
+  void Init(
+      std::unique_ptr<RewardsNotificationServiceObserver> extension_observer);
   void AddNotification(RewardsNotificationType type,
                        RewardsNotificationArgs args,
                        RewardsNotificationID id = "",
@@ -61,7 +64,7 @@ class RewardsNotificationServiceImpl
   void OnReconcileComplete(
       RewardsService* rewards_service,
       unsigned int result,
-      const std::string& viewing_id,
+      const std::string& contribution_id,
       const double amount,
       const int32_t type) override;
 
@@ -88,10 +91,7 @@ class RewardsNotificationServiceImpl
   Profile* profile_;
   RewardsNotificationsMap rewards_notifications_;
   std::vector<RewardsNotificationID> rewards_notifications_displayed_;
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  std::unique_ptr<ExtensionRewardsNotificationServiceObserver>
-      extension_rewards_notification_service_observer_;
-#endif
+  std::unique_ptr<RewardsNotificationServiceObserver> extension_observer_;
 
   DISALLOW_COPY_AND_ASSIGN(RewardsNotificationServiceImpl);
 };

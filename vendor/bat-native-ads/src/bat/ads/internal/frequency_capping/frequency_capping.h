@@ -3,8 +3,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef BAT_ADS_INTERNAL_FREQUENCY_CAPPING_H_
-#define BAT_ADS_INTERNAL_FREQUENCY_CAPPING_H_
+#ifndef BAT_ADS_INTERNAL_FREQUENCY_CAPPING_FREQUENCY_CAPPING_H_
+#define BAT_ADS_INTERNAL_FREQUENCY_CAPPING_FREQUENCY_CAPPING_H_
 
 #include <stdint.h>
 #include <deque>
@@ -37,10 +37,13 @@ class FrequencyCapping {
   std::deque<uint64_t> GetCampaign(
       const std::string& campaign_id) const;
 
+  std::deque<uint64_t> GetAdConversionHistory(
+      const std::string& creative_set_id) const;
+
  private:
   const Client* const client_;  // NOT OWNED
 };
 
 }  // namespace ads
 
-#endif  // BAT_ADS_INTERNAL_FREQUENCY_CAPPING_H_
+#endif  // BAT_ADS_INTERNAL_FREQUENCY_CAPPING_FREQUENCY_CAPPING_H_

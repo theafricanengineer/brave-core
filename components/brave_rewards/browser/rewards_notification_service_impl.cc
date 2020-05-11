@@ -17,33 +17,29 @@
 #include "base/values.h"
 #include "bat/ledger/ledger.h"
 #include "brave/components/brave_rewards/common/pref_names.h"
-#include "brave/components/brave_rewards/browser/rewards_notification_service_observer.h"
 #include "chrome/browser/profiles/profile.h"
 #include "components/prefs/pref_service.h"
-#include "extensions/buildflags/buildflags.h"
-
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-#include "brave/components/brave_rewards/browser/extension_rewards_notification_service_observer.h"
-#endif
 
 namespace brave_rewards {
 
 RewardsNotificationServiceImpl::RewardsNotificationServiceImpl(Profile* profile)
     : profile_(profile) {
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  extension_rewards_notification_service_observer_ =
-          std::make_unique<ExtensionRewardsNotificationServiceObserver>
-              (profile);
-  AddObserver(extension_rewards_notification_service_observer_.get());
-#endif
   ReadRewardsNotificationsJSON();
 }
 
 RewardsNotificationServiceImpl::~RewardsNotificationServiceImpl() {
   StoreRewardsNotifications();
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  RemoveObserver(extension_rewards_notification_service_observer_.get());
-#endif
+  if (extension_observer_) {
+    RemoveObserver(extension_observer_.get());
+  }
+}
+
+void RewardsNotificationServiceImpl::Init(
+    std::unique_ptr<RewardsNotificationServiceObserver> extension_observer) {
+  if (extension_observer) {
+    extension_observer_ = std::move(extension_observer);
+    AddObserver(extension_observer_.get());
+  }
 }
 
 void RewardsNotificationServiceImpl::AddNotification(
@@ -369,7 +365,7 @@ void RewardsNotificationServiceImpl::OnPromotionFinished(
 void RewardsNotificationServiceImpl::OnReconcileComplete(
     RewardsService* rewards_service,
     unsigned int result,
-    const std::string& viewing_id,
+    const std::string& contribution_id,
     const double amount,
     const int32_t type) {
   auto converted_result = static_cast<ledger::Result>(result);
@@ -388,7 +384,7 @@ void RewardsNotificationServiceImpl::OnReconcileComplete(
       converted_result == ledger::Result::LEDGER_ERROR ||
       converted_result == ledger::Result::TIP_ERROR) {
     RewardsNotificationService::RewardsNotificationArgs args;
-    args.push_back(viewing_id);
+    args.push_back(contribution_id);
     args.push_back(std::to_string(result));
     args.push_back(std::to_string(type));
     args.push_back(std::to_string(amount));
@@ -396,7 +392,7 @@ void RewardsNotificationServiceImpl::OnReconcileComplete(
     AddNotification(
         RewardsNotificationService::REWARDS_NOTIFICATION_AUTO_CONTRIBUTE,
         args,
-        "contribution_" + viewing_id);
+        "contribution_" + contribution_id);
   }
 }
 
