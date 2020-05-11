@@ -12,13 +12,26 @@
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
+#include "base/observer_list.h"
 #include "brave/components/brave_component_updater/browser/brave_component.h"
 #include "brave/components/brave_usermodel_parameters/browser/parameters.h"
 
+using brave_component_updater::BraveComponent;
+
 namespace brave_usermodel_parameters {
 
-class UsermodelParameterService : public brave_component_updater::BraveComponent {  // NOLINT
+class UsermodelParameterService : public BraveComponent {
  public:
+  class Observer : public base::CheckedObserver {
+   public:
+    virtual void OnUserModelUpdated(
+        const std::string& model_id,
+        const base::FilePath& model_path) = 0;
+
+   protected:
+    ~Observer() override = default;
+  };
+
   explicit UsermodelParameterService(Delegate* delegate);
   ~UsermodelParameterService() override;
 
@@ -26,7 +39,16 @@ class UsermodelParameterService : public brave_component_updater::BraveComponent
   UsermodelParameterService& operator=(const UsermodelParameterService&) =
       delete;
 
-  ParametersInfo GetParametersForModel(
+  void AddObserver(
+      Observer* observer);
+  void RemoveObserver(
+      Observer* observer);
+  void NotifyObservers(
+      const std::string& model_id,
+      const base::FilePath& model_path);
+  base::FilePath GetModelPath(
+      const std::string& model_id);
+  ParametersInfo GetParametersFilePathForModel(
       const std::string& model_id);
 
  private:
@@ -38,6 +60,7 @@ class UsermodelParameterService : public brave_component_updater::BraveComponent
       const base::FilePath& install_dir,
       const std::string& manifest_json);
 
+  base::ObserverList<Observer> observers_;
   std::unique_ptr<Parameters> parameters_;
   base::WeakPtrFactory<UsermodelParameterService> weak_factory_{this};
 };

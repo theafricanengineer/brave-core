@@ -17,7 +17,7 @@ namespace brave_usermodel_parameters {
 
 struct ParametersInfo {
   std::string model_id;
-  std::string version;
+  uint16_t version;
   base::FilePath parameter_file;
 };
 
@@ -26,11 +26,13 @@ class Parameters {
   Parameters();
   ~Parameters();
 
+  uint16_t GetSchemaVersion();
+  void AddSchemaVersion(uint16_t);
   ParametersInfo GetParametersInfo(
       const std::string& model_id);
-  uint16_t GetSchemaVersion();
-  void SetSchemaVersion(uint16_t);
-  void AddParametersInfo(
+  bool AddParametersInfo(
+      const ParametersInfo& info);
+  bool AddOrUpdateParametersInfo(
       const ParametersInfo& info);
 
  private:
