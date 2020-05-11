@@ -12,6 +12,7 @@
 #include "brave/components/brave_referrals/browser/brave_referrals_service.h"
 #include "brave/components/ntp_background_images/browser/ntp_background_images_data.h"
 #include "brave/components/ntp_background_images/browser/ntp_background_images_service.h"
+#include "brave/components/ntp_background_images/browser/view_counter_model.h"
 #include "brave/components/ntp_background_images/browser/view_counter_service.h"
 #include "brave/components/ntp_background_images/common/pref_names.h"
 #include "components/prefs/testing_pref_service.h"
@@ -171,6 +172,19 @@ TEST_F(NTPBackgroundImagesViewCounterTest, ActiveInitiallyOptedIn) {
 
   service_->sr_images_data_ = GetDemoWallpaper(true);
   EXPECT_TRUE(view_counter_->IsBrandedWallpaperActive());
+}
+
+TEST_F(NTPBackgroundImagesViewCounterTest, ModelTest) {
+  service_->sr_images_data_ = GetDemoWallpaper(true);
+  service_->si_images_data_ = GetDemoWallpaper(false);
+  view_counter_->OnUpdated(service_->sr_images_data_.get());
+  EXPECT_TRUE(view_counter_->model_.ignore_count_to_branded_wallpaper_);
+
+  service_->sr_images_data_.reset(new NTPBackgroundImagesData);
+  view_counter_->OnSuperReferralEnded();
+  EXPECT_FALSE(view_counter_->model_.ignore_count_to_branded_wallpaper_);
+  const int expected_count = ViewCounterModel::kRegularCountToBrandedWallpaper;
+  EXPECT_EQ(expected_count, view_counter_->model_.count_to_branded_wallpaper_);
 }
 
 }  // namespace ntp_background_images
